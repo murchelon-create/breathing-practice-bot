@@ -35,7 +35,7 @@ async function handleStart(ctx) {
       // Отправляем логотип ОДИН РАЗ
       await ctx.replyWithPhoto(
         { source: 'files/logo.jpg' },
-        { caption: '🌬️ Дыхательные практики Анастасии Поповой' }
+        { caption: '🌬️ Дыхательные практики Попова Александра' }
       );
       
       // Небольшая задержка для лучшего UX
