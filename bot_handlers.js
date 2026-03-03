@@ -39,7 +39,7 @@ bot.action('show_info', async (ctx) => {
     // Сначала отправляем логотип с подписью
     await ctx.replyWithPhoto(
       { source: 'files/logo.jpg' },
-      { caption: '🌬️ Дыхательные практики Анастасии Поповой - Информация о курсах' }
+      { caption: '🌬️ Дыхательные практики Попова Александра - Информация о курсах' }
     );
     
     // Небольшая задержка для лучшего UX
@@ -47,7 +47,7 @@ bot.action('show_info', async (ctx) => {
     
     // Отправляем основной текст
     await ctx.reply(
-      `ℹ️ *О курсах дыхательных практик*\n\nПривет, ${userName}!\n\n*Анастасия Попова* - сертифицированный инструктор по дыхательным практикам.\n\nНаши курсы помогут вам:\n\n• Повысить жизненную энергию\n• Снизить уровень стресса\n• Улучшить качество сна\n• Повысить иммунитет\n• Улучшить работу дыхательной системы\n\nВыберите "🛒 Купить курс" в меню, чтобы ознакомиться с доступными программами.`,
+      `ℹ️ *О курсах дыхательных практик*\n\nПривет, ${userName}!\n\n*Попов Александр* - сертифицированный инструктор по дыхательной гимнастике Бутейко.\n\nНаши курсы помогут вам:\n\n• Повысить жизненную энергию\n• Снизить уровень стресса\n• Улучшить качество сна\n• Повысить иммунитет\n• Улучшить работу дыхательной системы\n\nВыберите \"🛍️ Купить курс\" в меню, чтобы ознакомиться с доступными программами.`,
       { 
         parse_mode: 'Markdown',
         reply_markup: {
@@ -129,7 +129,7 @@ bot.action('show_consultations', async (ctx) => {
     // Проверяем, есть ли у пользователя консультации
     if (!completedOrders[userId] || completedOrders[userId].length === 0) {
       await ctx.reply(
-        'У вас пока нет консультаций. Выберите "🛒 Купить курс", чтобы приобрести индивидуальную консультацию.',
+        'У вас пока нет консультаций. Выберите "🛍️ Купить курс", чтобы приобрести индивидуальную консультацию.',
         { 
           reply_markup: {
             ...mainKeyboard().reply_markup,
@@ -148,7 +148,7 @@ bot.action('show_consultations', async (ctx) => {
     
     if (consultations.length === 0) {
       await ctx.reply(
-        'У вас пока нет индивидуальных консультаций. Выберите "🛒 Купить курс", чтобы приобрести консультацию.',
+        'У вас пока нет индивидуальных консультаций. Выберите "🛍️ Купить курс", чтобы приобрести консультацию.',
         { 
           reply_markup: {
             ...mainKeyboard().reply_markup,
@@ -305,14 +305,10 @@ app.get('/', (req, res) => {
 // Маршрут для проверки здоровья (важно для Railway)
 app.get('/ping', (req, res) => {
   try {
-    // Отправляем простой текстовый ответ с HTTP кодом 200
     res.status(200).set('Content-Type', 'text/plain').send('pong');
-    
-    // Обновляем метку времени последней активности
     global.botData.lastPingTime = new Date();
   } catch (error) {
     console.error(`Ошибка при обработке ping-запроса: ${error.message}`);
-    // Даже при ошибке отправляем успешный ответ
     res.status(200).send('error, but still alive');
   }
 });
@@ -346,7 +342,6 @@ app.get('/status', (req, res) => {
       }
     };
     
-    // Добавляем статистику пинга, если доступна
     try {
       if (global.botData.pingManager) {
         status.ping_stats = global.botData.pingManager.getStats();
@@ -363,7 +358,6 @@ app.get('/status', (req, res) => {
   }
 });
 
-// Расширенный маршрут проверки здоровья
 app.get('/health', (req, res) => {
   try {
     const uptime = Math.floor((new Date() - startTime) / 1000);
@@ -384,17 +378,14 @@ app.get('/health', (req, res) => {
   }
 });
 
-// Запуск приложения и настройка вебхука с оптимизациями для Railway
 async function startApp() {
   try {
-    // Запускаем Express сервер
     console.log(`Запуск Express сервера на порту ${PORT}...`);
     const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on port ${PORT}`);
       logWithTime(`Express сервер запущен на порту ${PORT} и адресе 0.0.0.0`);
     });
     
-    // Настраиваем вебхук с несколькими попытками
     let webhookSetup = false;
     let attempts = 0;
     const maxAttempts = 5;
@@ -409,7 +400,6 @@ async function startApp() {
           logWithTime(`Вебхук успешно настроен с ${attempts} попытки`);
         } else {
           logWithTime(`Не удалось настроить вебхук (попытка ${attempts}/${maxAttempts})`);
-          // Если вебхук не настроен, ждем перед следующей попыткой
           await new Promise(resolve => setTimeout(resolve, 5000));
         }
       } catch (error) {
@@ -421,7 +411,6 @@ async function startApp() {
     if (webhookSetup) {
       logWithTime('Бот успешно настроен в режиме вебхука');
       
-      // Настройка команд меню и их обработчиков
       try {
         await setupBotCommands(bot);
         setupCommandHandlers(bot, require('./handlers').handleStart);
@@ -430,21 +419,14 @@ async function startApp() {
         logWithTime(`Ошибка при настройке команд меню: ${menuError.message}`);
       }
       
-      // Настройка улучшенного самопинга для Railway с обработкой ошибок
       if (APP_URL) {
-        // Используем значительно больший интервал для Railway (30 минут) и настраиваем 3 повторные попытки
         const pingManager = setupPing(APP_URL, 30, 3);
-        
-        // Сохраняем pingManager в глобальных данных для доступа из других частей приложения
         global.botData.pingManager = pingManager;
-        
         logWithTime(`Настроен улучшенный самопинг для ${APP_URL} с интервалом 30 минут`);
       }
       
-      // Настройка планировщика задач с оптимизациями для Railway
       setupScheduler(bot, ADMIN_ID, RAILWAY_OPTIMIZED_MODE);
       
-      // Уведомляем админа о запуске только если не отключены уведомления
       if (ADMIN_ID && !DISABLE_RESTART_NOTIFICATIONS) {
         try {
           const botInfo = await bot.telegram.getMe();
@@ -468,15 +450,11 @@ async function startApp() {
   }
 }
 
-// Настройка graceful shutdown с логированием памяти
 process.once('SIGINT', () => {
   logWithTime('Получен сигнал SIGINT, останавливаем бота...');
   const memoryInfo = `Память при остановке: ${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB`;
   logWithTime(memoryInfo);
-  
-  bot.telegram.deleteWebhook().then(() => {
-    logWithTime('Вебхук удален');
-  });
+  bot.telegram.deleteWebhook().then(() => { logWithTime('Вебхук удален'); });
   logWithTime('Бот остановлен по SIGINT');
 });
 
@@ -484,10 +462,7 @@ process.once('SIGTERM', () => {
   logWithTime('Получен сигнал SIGTERM, останавливаем бота...');
   const memoryInfo = `Память при остановке: ${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB`;
   logWithTime(memoryInfo);
-  
-  bot.telegram.deleteWebhook().then(() => {
-    logWithTime('Вебхук удален');
-  });
+  bot.telegram.deleteWebhook().then(() => { logWithTime('Вебхук удален'); });
   logWithTime('Бот остановлен по SIGTERM');
 });
 
