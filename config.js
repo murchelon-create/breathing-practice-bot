@@ -72,39 +72,8 @@ const webhookUrl = `${APP_URL}${secretPath}`;
 app.use(bot.webhookCallback(secretPath));
 logWithTime(`✅ Обработчик вебхука настроен на путь: ${secretPath}`);
 
-// Настройка вебхука для Telegram бота
-const setupWebhook = async () => {
-  try {
-    if (!APP_URL) {
-      throw new Error('APP_URL не указан в переменных окружения');
-    }
-
-    logWithTime(`Попытка установки вебхука на: ${webhookUrl}`);
-
-    // ВАЖНО: Сначала пытаемся установить новый вебхук
-    // Если это не получится, НЕ удаляем существующий
-    await bot.telegram.setWebhook(webhookUrl, {
-      drop_pending_updates: true
-    });
-    
-    logWithTime('✅ Вебхук успешно установлен');
-
-    // Проверяем, что вебхук установлен
-    const webhookInfo = await bot.telegram.getWebhookInfo();
-    logWithTime(`Информация о вебхуке: pending_update_count=${webhookInfo.pending_update_count}`);
-
-    if (webhookInfo.url !== webhookUrl) {
-      logWithTime(`⚠️ URL вебхука отличается: установлен="${webhookInfo.url}", ожидается="${webhookUrl}"`);
-    }
-
-    return true;
-  } catch (error) {
-    console.error(`❌ Ошибка при установке вебхука: ${error.message}`);
-    logWithTime(`⚠️ Вебхук не установлен автоматически, но обработчик работает`);
-    logWithTime(`💡 Установите вручную через: https://api.telegram.org/bot${BOT_TOKEN}/setWebhook?url=${webhookUrl}`);
-    return false;
-  }
-};
+// ПРИМЕЧАНИЕ: Установка вебхука теперь происходит в index.js автоматически
+// Функция setupWebhook удалена из этого файла
 
 // Форматирование времени работы
 function formatUptime(seconds) {
@@ -136,7 +105,6 @@ module.exports = {
   pendingOrders,
   completedOrders,
   startTime,
-  setupWebhook,
   logWithTime,
   formatUptime
 };
