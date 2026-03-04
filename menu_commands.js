@@ -58,9 +58,8 @@ function setupCommandHandlers(bot, handleStart) {
           reply_markup: {
             inline_keyboard: [
               [{ text: '🔰 Стартовый комплект - 990 ₽', callback_data: 'buy_starter' }],
-              [{ text: '👤 Индивидуальное занятие - 2 000 ₽', callback_data: 'buy_individual' }],
-              [{ text: '🎯 Пакет 3 занятия - 4500 ₽', callback_data: 'buy_package' }],
-              [{ text: '🏆 Полный курс видеоуроков - 14 999 ₽ [🔄 В разработке]', callback_data: 'product_in_development' }],
+              [{ text: '👤 Разовая консультация - 5 000 ₽', callback_data: 'buy_individual' }],
+              [{ text: '🎯 Пакет 5 занятий - 22 000 ₽', callback_data: 'buy_package' }],
               [{ text: '◀️ Назад', callback_data: 'back_to_menu' }]
             ]
           }
@@ -83,7 +82,7 @@ function setupCommandHandlers(bot, handleStart) {
       // Сначала отправляем логотип с подписью
       await ctx.replyWithPhoto(
         { source: 'files/logo.jpg' },
-        { caption: '🌬️ Дыхательные практики Попова Александра - Информация о курсах' }
+        { caption: '🌬️ Дыхательная гимнастика по методу Бутейко с Александром Поповым - Информация о курсах' }
       );
       
       // Небольшая задержка для лучшего UX
@@ -91,7 +90,7 @@ function setupCommandHandlers(bot, handleStart) {
       
       // Отправляем основной текст
       await ctx.reply(
-        `ℹ️ *О курсах дыхательных практик*\n\nПривет, ${userName}!\n\n*Попов Александр* - инструктор по дыхательной гимнастике Бутейко.\n\nНаши курсы помогут вам:\n\n• Повысить жизненную энергию\n• Снизить уровень стресса\n• Улучшить качество сна\n• Повысить иммунитет\n• Улучшить работу дыхательной системы\n\nВыберите /buy в меню, чтобы ознакомиться с доступными программами.`,
+        `ℹ️ *О курсах дыхательной гимнастики*\\n\\nПривет, ${userName}!\\n\\n*Александр Попов* - инструктор по дыхательной гимнастике метода Бутейко.\\n\\nНаши курсы помогут вам:\\n\\n• Повысить жизненную энергию\\n• Снизить уровень стресса\\n• Улучшить качество сна\\n• Повысить иммунитет\\n• Улучшить работу дыхательной системы\\n\\nВыберите /buy в меню, чтобы ознакомиться с доступными программами.\\n\\n📞 Связаться с преподавателем: @AS_Popov87`,
         { 
           parse_mode: 'Markdown',
           reply_markup: {
@@ -125,26 +124,26 @@ function setupCommandHandlers(bot, handleStart) {
       
       // Если есть заказы, показываем их
       const orders = completedOrders[userId];
-      let message = '*Ваши покупки:*\n\n';
+      let message = '*Ваши покупки:*\\n\\n';
       
       orders.forEach((order, index) => {
         const product = products[order.productId];
         const orderDate = new Date(order.completedAt).toLocaleDateString();
         const orderNumber = order.orderId || `#${Date.now().toString().slice(-6)}`;
         
-        message += `*${index + 1}. ${product.name}*\n`;
-        message += `🆔 Заказ: ${orderNumber}\n`;
-        message += `📅 Дата: ${orderDate}\n`;
-        message += `💳 Цена: ${product.price}\n`;
+        message += `*${index + 1}. ${product.name}*\\n`;
+        message += `🆔 Заказ: ${orderNumber}\\n`;
+        message += `📅 Дата: ${orderDate}\\n`;
+        message += `💳 Цена: ${product.price}\\n`;
         
         if (order.recordingSent) {
-          message += `🎬 Запись консультации: ✅\n`;
+          message += `🎬 Запись консультации: ✅\\n`;
         }
         
-        message += '\n';
+        message += '\\n';
       });
       
-      message += '\nДля повторного доступа к материалам напишите в чат администратору.';
+      message += '\\nДля повторного доступа к материалам напишите в чат администратору @AS_Popov87';
       
       await ctx.reply(
         message, 
@@ -200,28 +199,28 @@ function setupCommandHandlers(bot, handleStart) {
       }
       
       // Если есть консультации, показываем их
-      let message = '*Ваши консультации:*\n\n';
+      let message = '*Ваши консультации:*\\n\\n';
       
       consultations.forEach((consultation, index) => {
         const product = products[consultation.productId];
         const orderDate = new Date(consultation.completedAt).toLocaleDateString();
         const orderNumber = consultation.orderId || `#${Date.now().toString().slice(-6)}`;
         
-        message += `*${index + 1}. ${product.name}*\n`;
-        message += `🆔 Заказ: ${orderNumber}\n`;
-        message += `📅 Дата: ${orderDate}\n`;
+        message += `*${index + 1}. ${product.name}*\\n`;
+        message += `🆔 Заказ: ${orderNumber}\\n`;
+        message += `📅 Дата: ${orderDate}\\n`;
         
         if (consultation.recordingSent) {
-          message += `🎬 Запись: ✅ [Доступна]\n`;
-          message += `🔗 Ссылка: ${consultation.recordingLink || 'Свяжитесь с преподавателем'}\n`;
+          message += `🎬 Запись: ✅ [Доступна]\\n`;
+          message += `🔗 Ссылка: ${consultation.recordingLink || 'Свяжитесь с преподавателем'}\\n`;
         } else {
-          message += `🎬 Запись: ⏳ [Ожидает отправки]\n`;
+          message += `🎬 Запись: ⏳ [Ожидает отправки]\\n`;
         }
         
-        message += '\n';
+        message += '\\n';
       });
       
-      message += 'Для получения записи консультации или дополнительной информации, пожалуйста, свяжитесь с преподавателем.';
+      message += 'Для получения записи консультации или дополнительной информации, пожалуйста, свяжитесь с преподавателем @AS_Popov87';
       
       await ctx.reply(
         message, 
@@ -245,7 +244,7 @@ function setupCommandHandlers(bot, handleStart) {
       const userName = getUserName(ctx.from);
       
       await ctx.reply(
-        `📱 *Связаться с преподавателем*\n\nПривет, ${userName}!\n\nВы можете написать Александру напрямую по любым вопросам:`,
+        `📱 *Связаться с преподавателем*\\n\\nПривет, ${userName}!\\n\\nВы можете написать Александру напрямую по любым вопросам:`,
         {
           parse_mode: 'Markdown',
           reply_markup: {
@@ -270,14 +269,14 @@ function setupCommandHandlers(bot, handleStart) {
       const userName = getUserName(ctx.from);
       
       await ctx.reply(
-        `🌬️ *Дыхательные практики Попова Александра*\n\nПривет, ${userName}!\n\nДоступные команды:\n\n` +
-        '• /start - Начать работу с ботом\n' +
-        '• /buy - Купить курс или консультацию\n' +
-        '• /info - Информация о курсах\n' +
-        '• /purchases - Мои покупки\n' +
-        '• /consultations - Мои консультации\n' +
-        '• /contact - Связаться с преподавателем\n' +
-        '• /help - Получить эту справку\n\n' +
+        `🌬️ *Дыхательная гимнастика по методу Бутейко с Александром Поповым*\\n\\nПривет, ${userName}!\\n\\nДоступные команды:\\n\\n` +
+        '• /start - Начать работу с ботом\\n' +
+        '• /buy - Купить курс или консультацию\\n' +
+        '• /info - Информация о курсах\\n' +
+        '• /purchases - Мои покупки\\n' +
+        '• /consultations - Мои консультации\\n' +
+        '• /contact - Связаться с преподавателем\\n' +
+        '• /help - Получить эту справку\\n\\n' +
         'Если у вас возникли вопросы, вы всегда можете связаться с Александром напрямую: @AS_Popov87',
         { 
           parse_mode: 'Markdown',
