@@ -44,7 +44,7 @@ async function sendMessageWithInlineKeyboard(ctx, text, options = {}) {
     ...options,
     reply_markup: {
       ...mainKeyboard().reply_markup,
-      remove_keyboard: index
+      remove_keyboard: true
     }
   });
 }
