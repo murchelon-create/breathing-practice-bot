@@ -345,7 +345,7 @@ async function handleTextInput(ctx) {
         // Отправляем изображение с заказом
         await ctx.replyWithPhoto(
           { source: 'files/logo.jpg' },
-          { caption: `📋 *Ваш заказ*: ${product.name}` }
+          { caption: `📋 Ваш заказ: ${product.name}`, parse_mode: '' }
         );
       } catch (photoError) {
         console.error(`[ERROR] Не удалось отправить логотип: ${photoError.message}`);
@@ -355,11 +355,10 @@ async function handleTextInput(ctx) {
       // Задержка для лучшего UX
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Отправляем информацию о заказе с inline-кнопками и удаляем клавиатуру
+      // ВАЖНО: Убираем parse_mode чтобы избежать ошибок парсинга
       await ctx.reply(
         messageTemplates.orderReady(product.name, product.price),
         { 
-          parse_mode: 'Markdown',
           reply_markup: {
             ...mainKeyboard().reply_markup,
             remove_keyboard: true
