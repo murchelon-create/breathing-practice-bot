@@ -11,7 +11,6 @@ const {
   pendingOrders, 
   completedOrders,
   startTime,
-  setupWebhook,
   logWithTime,
   formatUptime
 } = require('./config');
@@ -386,63 +385,39 @@ async function startApp() {
       logWithTime(`Express сервер запущен на порту ${PORT} и адресе 0.0.0.0`);
     });
 
-    let webhookSetup = false;
-    let attempts = 0;
-    const maxAttempts = 5;
+    // ВЕБХУК ТЕПЕРЬ УСТАНАВЛИВАЕТСЯ АВТОМАТИЧЕСКИ В index.js
+    // Здесь только настраиваем остальные компоненты
+    
+    logWithTime('Бот запущен в режиме вебхука (управление в index.js)');
 
-    while (!webhookSetup && attempts < maxAttempts) {
-      attempts++;
-      try {
-        logWithTime(`Попытка настройки вебхука ${attempts}/${maxAttempts}`);
-        webhookSetup = await setupWebhook();
-
-        if (webhookSetup) {
-          logWithTime(`Вебхук успешно настроен с ${attempts} попытки`);
-        } else {
-          logWithTime(`Не удалось настроить вебхук (попытка ${attempts}/${maxAttempts})`);
-          await new Promise(resolve => setTimeout(resolve, 5000));
-        }
-      } catch (error) {
-        logWithTime(`Ошибка при настройке вебхука (попытка ${attempts}/${maxAttempts}): ${error.message}`);
-        await new Promise(resolve => setTimeout(resolve, 5000));
-      }
+    try {
+      await setupBotCommands(bot);
+      setupCommandHandlers(bot, require('./handlers').handleStart);
+      logWithTime('Команды меню и обработчики успешно настроены');
+    } catch (menuError) {
+      logWithTime(`Ошибка при настройке команд меню: ${menuError.message}`);
     }
 
-    if (webhookSetup) {
-      logWithTime('Бот успешно настроен в режиме вебхука');
+    if (APP_URL) {
+      const pingManager = setupPing(APP_URL, 30, 3);
+      global.botData.pingManager = pingManager;
+      logWithTime(`Настроен улучшенный самопинг для ${APP_URL} с интервалом 30 минут`);
+    }
 
+    setupScheduler(bot, ADMIN_ID, RAILWAY_OPTIMIZED_MODE);
+
+    if (ADMIN_ID && !DISABLE_RESTART_NOTIFICATIONS) {
       try {
-        await setupBotCommands(bot);
-        setupCommandHandlers(bot, require('./handlers').handleStart);
-        logWithTime('Команды меню и обработчики успешно настроены');
-      } catch (menuError) {
-        logWithTime(`Ошибка при настройке команд меню: ${menuError.message}`);
+        const botInfo = await bot.telegram.getMe();
+        const memoryInfo = `Память: ${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB`;
+
+        bot.telegram.sendMessage(
+          ADMIN_ID,
+          `🤖 Бот запущен на Railway!\n\nВремя запуска: ${new Date().toLocaleString()}\nИмя бота: @${botInfo.username}\nID бота: ${botInfo.id}\nURL: ${APP_URL}\nPORT: ${PORT}\nРежим оптимизации: ${RAILWAY_OPTIMIZED_MODE ? 'Включен ✅' : 'Выключен ❌'}\n${memoryInfo}`
+        ).catch(e => console.warn('Не удалось отправить уведомление:', e.message));
+      } catch (error) {
+        console.error('Ошибка при отправке уведомления админу:', error.message);
       }
-
-      if (APP_URL) {
-        const pingManager = setupPing(APP_URL, 30, 3);
-        global.botData.pingManager = pingManager;
-        logWithTime(`Настроен улучшенный самопинг для ${APP_URL} с интервалом 30 минут`);
-      }
-
-      setupScheduler(bot, ADMIN_ID, RAILWAY_OPTIMIZED_MODE);
-
-      if (ADMIN_ID && !DISABLE_RESTART_NOTIFICATIONS) {
-        try {
-          const botInfo = await bot.telegram.getMe();
-          const memoryInfo = `Память: ${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB`;
-
-          bot.telegram.sendMessage(
-            ADMIN_ID,
-            `🤖 Бот запущен на Railway!\n\nВремя запуска: ${new Date().toLocaleString()}\nИмя бота: @${botInfo.username}\nID бота: ${botInfo.id}\nURL: ${APP_URL}\nPORT: ${PORT}\nРежим оптимизации: ${RAILWAY_OPTIMIZED_MODE ? 'Включен ✅' : 'Выключен ❌'}\n${memoryInfo}`
-          ).catch(e => console.warn('Не удалось отправить уведомление:', e.message));
-        } catch (error) {
-          console.error('Ошибка при отправке уведомления админу:', error.message);
-        }
-      }
-    } else {
-      logWithTime('Не удалось настроить вебхук после нескольких попыток');
-      console.error('Не удалось настроить вебхук после нескольких попыток');
     }
   } catch (error) {
     console.error('Ошибка при запуске приложения:', error);
@@ -454,7 +429,6 @@ process.once('SIGINT', () => {
   logWithTime('Получен сигнал SIGINT, останавливаем бота...');
   const memoryInfo = `Память при остановке: ${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB`;
   logWithTime(memoryInfo);
-  bot.telegram.deleteWebhook().then(() => { logWithTime('Вебхук удален'); });
   logWithTime('Бот остановлен по SIGINT');
 });
 
@@ -462,7 +436,6 @@ process.once('SIGTERM', () => {
   logWithTime('Получен сигнал SIGTERM, останавливаем бота...');
   const memoryInfo = `Память при остановке: ${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB`;
   logWithTime(memoryInfo);
-  bot.telegram.deleteWebhook().then(() => { logWithTime('Вебхук удален'); });
   logWithTime('Бот остановлен по SIGTERM');
 });
 
