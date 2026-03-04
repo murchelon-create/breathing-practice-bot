@@ -16,7 +16,7 @@ function mainKeyboard() {
       Markup.button.callback('🎬 Мои консультации', 'show_consultations')
     ],
     [
-      Markup.button.url('☎️ Связаться с преподавателем', 'https://t.me/NastuPopova')
+      Markup.button.url('☎️ Связаться с преподавателем', 'https://t.me/AS_Popov87')
     ]
   ]);
 }
@@ -44,7 +44,7 @@ async function sendMessageWithInlineKeyboard(ctx, text, options = {}) {
     ...options,
     reply_markup: {
       ...mainKeyboard().reply_markup,
-      remove_keyboard: true
+      remove_keyboard: index
     }
   });
 }
