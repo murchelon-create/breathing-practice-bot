@@ -1,7 +1,7 @@
 // Файл: index.js
 // Основной файл Telegram-бота с поддержкой вебхуков
 
-// Импортируем общую конфигурацию
+// Импортируем общую конфигурацию (БЕЗ setupWebhook!)
 const { 
   app, 
   bot, 
@@ -11,7 +11,6 @@ const {
   pendingOrders, 
   completedOrders,
   startTime,
-  setupWebhook,
   logWithTime,
   formatUptime
 } = require('./config');
@@ -149,7 +148,7 @@ bot.action(/confirm_simple_(.+)/, async (ctx) => {
   }
 });
 
-// ОБРАБОТЧИК ПОДТВЕРЖДЕНИЯ ОПЛАТЫ (ДЛЯ АДРЕСА)
+// ОБРАБОТЧИК ПОДТВЕРЖДЕНИЯ ОПЛАТЫ (ДЛЯ АДМИНА)
 bot.action(/confirm_payment_(.+)/, async (ctx) => {
   const clientId = parseInt(ctx.match[1]);
   const adminId = ctx.from.id;
