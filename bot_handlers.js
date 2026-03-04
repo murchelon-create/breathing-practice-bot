@@ -425,18 +425,20 @@ async function startApp() {
   }
 }
 
+// ВАЖНО: НЕ УДАЛЯЕМ ВЕБХУК ПРИ ОСТАНОВКЕ!
+// Вебхук должен сохраняться между рестартами
 process.once('SIGINT', () => {
   logWithTime('Получен сигнал SIGINT, останавливаем бота...');
   const memoryInfo = `Память при остановке: ${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB`;
   logWithTime(memoryInfo);
-  logWithTime('Бот остановлен по SIGINT');
+  logWithTime('Бот остановлен по SIGINT (вебхук сохранён)');
 });
 
 process.once('SIGTERM', () => {
   logWithTime('Получен сигнал SIGTERM, останавливаем бота...');
   const memoryInfo = `Память при остановке: ${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB`;
   logWithTime(memoryInfo);
-  logWithTime('Бот остановлен по SIGTERM');
+  logWithTime('Бот остановлен по SIGTERM (вебхук сохранён)');
 });
 
 // Запускаем приложение
