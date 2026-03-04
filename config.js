@@ -64,6 +64,14 @@ global.botData = {
   lastPingTime: new Date()
 };
 
+// Определяем секретный путь для вебхука (единожды)
+const secretPath = `/telegraf/${BOT_TOKEN}`;
+const webhookUrl = `${APP_URL}${secretPath}`;
+
+// ВАЖНО: Настраиваем обработчик вебхука СРАЗУ, до попытки установки
+app.use(bot.webhookCallback(secretPath));
+logWithTime(`✅ Обработчик вебхука настроен на путь: ${secretPath}`);
+
 // Функция для очистки старых обновлений Telegram
 const clearPendingUpdates = async () => {
   try {
@@ -98,37 +106,30 @@ const setupWebhook = async () => {
       throw new Error('APP_URL не указан в переменных окружения');
     }
 
-    // Определяем секретный путь для вебхука
-    const secretPath = `/telegraf/${BOT_TOKEN}`;
-    const webhookUrl = `${APP_URL}${secretPath}`;
+    logWithTime(`Попытка установки вебхука на: ${webhookUrl}`);
 
-    logWithTime(`Настройка вебхука на URL: ${webhookUrl}`);
-
-    // ВАЖНО: Сначала очищаем старые обновления
+    // Очищаем старые обновления
     await clearPendingUpdates();
 
     // Устанавливаем новый вебхук с параметром drop_pending_updates
     await bot.telegram.setWebhook(webhookUrl, {
-      drop_pending_updates: true  // Удаляем все старые обновления
+      drop_pending_updates: true
     });
-    logWithTime('Вебхук успешно установлен (старые обновления удалены)');
+    logWithTime('✅ Вебхук успешно установлен');
 
     // Проверяем, что вебхук установлен
     const webhookInfo = await bot.telegram.getWebhookInfo();
-    logWithTime(`Информация о вебхуке: ${JSON.stringify(webhookInfo)}`);
+    logWithTime(`Информация о вебхуке: pending_update_count=${webhookInfo.pending_update_count}`);
 
     if (webhookInfo.url !== webhookUrl) {
-      logWithTime(`ПРЕДУПРЕЖДЕНИЕ: URL вебхука (${webhookInfo.url}) отличается от ожидаемого (${webhookUrl})`);
+      logWithTime(`⚠️ URL вебхука отличается: установлен="${webhookInfo.url}", ожидается="${webhookUrl}"`);
     }
-
-    // Настройка обработки вебхука в Express
-    app.use(bot.webhookCallback(secretPath));
-    logWithTime(`Обработчик вебхука настроен на путь: ${secretPath}`);
 
     return true;
   } catch (error) {
-    console.error(`Ошибка при настройке вебхука: ${error.message}`);
-    logWithTime(`Ошибка при настройке вебхука: ${error.message}`);
+    console.error(`❌ Ошибка при установке вебхука: ${error.message}`);
+    logWithTime(`⚠️ Вебхук не установлен автоматически, но обработчик работает`);
+    logWithTime(`💡 Установите вручную через: https://api.telegram.org/bot${BOT_TOKEN}/setWebhook?url=${webhookUrl}`);
     return false;
   }
 };
