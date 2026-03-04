@@ -39,6 +39,9 @@ bot.on('callback_query', (ctx, next) => {
 // Обработчики команд
 bot.start(handleStart);
 
+// ВАЖНО: Обработчик текстовых сообщений для email/телефона
+bot.on('text', handleTextInput);
+
 // Обработчики для inline-кнопок
 bot.action('show_products', async (ctx) => {
   try {
