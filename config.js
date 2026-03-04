@@ -72,33 +72,6 @@ const webhookUrl = `${APP_URL}${secretPath}`;
 app.use(bot.webhookCallback(secretPath));
 logWithTime(`✅ Обработчик вебхука настроен на путь: ${secretPath}`);
 
-// Функция для очистки старых обновлений Telegram
-const clearPendingUpdates = async () => {
-  try {
-    logWithTime('Очистка старых обновлений Telegram...');
-    
-    // Получаем информацию о вебхуке
-    const webhookInfo = await bot.telegram.getWebhookInfo();
-    const pendingCount = webhookInfo.pending_update_count || 0;
-    
-    if (pendingCount > 0) {
-      logWithTime(`Найдено ${pendingCount} необработанных обновлений, очищаем...`);
-      
-      // Удаляем вебхук с параметром drop_pending_updates
-      await bot.telegram.deleteWebhook({ drop_pending_updates: true });
-      logWithTime('✅ Старые обновления очищены');
-      
-      return true;
-    } else {
-      logWithTime('✅ Нет необработанных обновлений');
-      return true;
-    }
-  } catch (error) {
-    console.error(`❌ Ошибка при очистке обновлений: ${error.message}`);
-    return false;
-  }
-};
-
 // Настройка вебхука для Telegram бота
 const setupWebhook = async () => {
   try {
@@ -108,13 +81,12 @@ const setupWebhook = async () => {
 
     logWithTime(`Попытка установки вебхука на: ${webhookUrl}`);
 
-    // Очищаем старые обновления
-    await clearPendingUpdates();
-
-    // Устанавливаем новый вебхук с параметром drop_pending_updates
+    // ВАЖНО: Сначала пытаемся установить новый вебхук
+    // Если это не получится, НЕ удаляем существующий
     await bot.telegram.setWebhook(webhookUrl, {
       drop_pending_updates: true
     });
+    
     logWithTime('✅ Вебхук успешно установлен');
 
     // Проверяем, что вебхук установлен
@@ -165,7 +137,6 @@ module.exports = {
   completedOrders,
   startTime,
   setupWebhook,
-  clearPendingUpdates,
   logWithTime,
   formatUptime
 };
