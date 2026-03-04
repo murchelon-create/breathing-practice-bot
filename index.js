@@ -48,9 +48,8 @@ bot.action('show_products', async (ctx) => {
         reply_markup: {
           inline_keyboard: [
             [{ text: '🔰 Стартовый комплект - 990 ₽', callback_data: 'buy_starter' }],
-            [{ text: '👤 Индивидуальное занятие - 2 000 ₽', callback_data: 'buy_individual' }],
-            [{ text: '🎯 Пакет 3 занятия - 4500 ₽', callback_data: 'buy_package' }],
-            [{ text: '🏆 Полный курс видеоуроков - 14 999 ₽ [🔄 В разработке]', callback_data: 'product_in_development' }],
+            [{ text: '👤 Разовая консультация - 5 000 ₽', callback_data: 'buy_individual' }],
+            [{ text: '🎯 Пакет 5 занятий - 22 000 ₽', callback_data: 'buy_package' }],
             [{ text: '◀️ Назад', callback_data: 'back_to_menu' }]
           ]
         }
@@ -69,7 +68,7 @@ bot.action('show_products', async (ctx) => {
 bot.action('product_in_development', async (ctx) => {
   try {
     await ctx.reply(
-      '🔄 *Продукт находится в разработке*\n\nПолный курс видеоуроков в настоящее время дорабатывается, чтобы предоставить вам наилучший опыт обучения.\n\nМы уведомим вас, когда он будет доступен для покупки. В настоящее время вы можете приобрести другие наши продукты.',
+      '🔄 *Продукт находится в разработке*\\n\\nПолный курс видеоуроков в настоящее время дорабатывается, чтобы предоставить вам наилучший опыт обучения.\\n\\nМы уведомим вас, когда он будет доступен для покупки. В настоящее время вы можете приобрести другие наши продукты.',
       { 
         parse_mode: 'Markdown',
         reply_markup: {
