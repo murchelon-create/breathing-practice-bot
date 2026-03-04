@@ -35,19 +35,19 @@ bot.action('show_info', async (ctx) => {
   try {
     // Используем функцию getUserName для получения имени пользователя
     const userName = getUserName(ctx.from);
-    
+
     // Сначала отправляем логотип с подписью
     await ctx.replyWithPhoto(
       { source: 'files/logo.jpg' },
-      { caption: '🌬️ Дыхательные практики Попова Александра - Информация о курсах' }
+      { caption: '🌬️ Дыхательная гимнастика по методу Бутейко с Александром Поповым' }
     );
-    
+
     // Небольшая задержка для лучшего UX
     await new Promise(resolve => setTimeout(resolve, 500));
-    
+
     // Отправляем основной текст
     await ctx.reply(
-      `ℹ️ *О курсах дыхательных практик*\n\nПривет, ${userName}!\n\n*Попов Александр* - сертифицированный инструктор по дыхательной гимнастике Бутейко.\n\nНаши курсы помогут вам:\n\n• Повысить жизненную энергию\n• Снизить уровень стресса\n• Улучшить качество сна\n• Повысить иммунитет\n• Улучшить работу дыхательной системы\n\nВыберите \"🛍️ Купить курс\" в меню, чтобы ознакомиться с доступными программами.`,
+      `ℹ️ *Дыхательная гимнастика по методу Бутейко с Александром Поповым*\n\nПривет, ${userName}!\n\n*Александр Попов* - сертифицированный инструктор по дыхательной гимнастике Бутейко.\n\nНаши курсы помогут вам:\n\n• Повысить жизненную энергию\n• Снизить уровень стресса\n• Улучшить качество сна\n• Повысить иммунитет\n• Улучшить работу дыхательной системы\n\nВыберите \"🛍️ Купить курс\" в меню, чтобы ознакомиться с доступными программами.\n\n📞 Связаться с преподавателем: @AS_Popov87`,
       { 
         parse_mode: 'Markdown',
         reply_markup: {
@@ -56,7 +56,7 @@ bot.action('show_info', async (ctx) => {
         }
       }
     );
-    
+
     await ctx.answerCbQuery();
     logWithTime(`Пользователь ${ctx.from.id} запросил информацию`);
   } catch (error) {
@@ -70,7 +70,7 @@ bot.action('show_purchases', async (ctx) => {
   try {
     const userId = ctx.from.id;
     const { completedOrders } = global.botData;
-    
+
     // Проверяем, есть ли у пользователя завершенные заказы
     if (!completedOrders[userId] || completedOrders[userId].length === 0) {
       await ctx.reply(
@@ -80,30 +80,30 @@ bot.action('show_purchases', async (ctx) => {
       await ctx.answerCbQuery('У вас пока нет завершенных покупок');
       return;
     }
-    
+
     // Если есть заказы, показываем их
     const orders = completedOrders[userId];
     let message = '*Ваши покупки:*\n\n';
-    
+
     orders.forEach((order, index) => {
       const product = products[order.productId];
       const orderDate = new Date(order.completedAt).toLocaleDateString();
       const orderNumber = order.orderId || `#${Date.now().toString().slice(-6)}`;
-      
+
       message += `*${index + 1}. ${product.name}*\n`;
       message += `🆔 Заказ: ${orderNumber}\n`;
       message += `📅 Дата: ${orderDate}\n`;
       message += `💳 Цена: ${product.price}\n`;
-      
+
       if (order.recordingSent) {
         message += `🎬 Запись консультации: ✅\n`;
       }
-      
+
       message += '\n';
     });
-    
-    message += '\nДля повторного доступа к материалам напишите в чат администратору.';
-    
+
+    message += '\nДля повторного доступа к материалам напишите в чат администратору @AS_Popov87';
+
     await ctx.reply(
       message, 
       { 
@@ -111,7 +111,7 @@ bot.action('show_purchases', async (ctx) => {
         reply_markup: mainKeyboard().reply_markup 
       }
     );
-    
+
     await ctx.answerCbQuery('Загружена информация о ваших покупках');
     logWithTime(`Пользователь ${userId} просмотрел свои покупки`);
   } catch (error) {
@@ -125,7 +125,7 @@ bot.action('show_consultations', async (ctx) => {
   try {
     const userId = ctx.from.id;
     const { completedOrders } = global.botData;
-    
+
     // Проверяем, есть ли у пользователя консультации
     if (!completedOrders[userId] || completedOrders[userId].length === 0) {
       await ctx.reply(
@@ -140,12 +140,12 @@ bot.action('show_consultations', async (ctx) => {
       await ctx.answerCbQuery('У вас пока нет консультаций');
       return;
     }
-    
+
     // Фильтруем только консультации
     const consultations = completedOrders[userId].filter(
       order => order.productId === 'individual' || order.productId === 'package'
     );
-    
+
     if (consultations.length === 0) {
       await ctx.reply(
         'У вас пока нет индивидуальных консультаций. Выберите "🛍️ Купить курс", чтобы приобрести консультацию.',
@@ -159,31 +159,31 @@ bot.action('show_consultations', async (ctx) => {
       await ctx.answerCbQuery('У вас пока нет индивидуальных консультаций');
       return;
     }
-    
+
     // Если есть консультации, показываем их
     let message = '*Ваши консультации:*\n\n';
-    
+
     consultations.forEach((consultation, index) => {
       const product = products[consultation.productId];
       const orderDate = new Date(consultation.completedAt).toLocaleDateString();
       const orderNumber = consultation.orderId || `#${Date.now().toString().slice(-6)}`;
-      
+
       message += `*${index + 1}. ${product.name}*\n`;
       message += `🆔 Заказ: ${orderNumber}\n`;
       message += `📅 Дата: ${orderDate}\n`;
-      
+
       if (consultation.recordingSent) {
         message += `🎬 Запись: ✅ [Доступна]\n`;
         message += `🔗 Ссылка: ${consultation.recordingLink || 'Свяжитесь с преподавателем'}\n`;
       } else {
         message += `🎬 Запись: ⏳ [Ожидает отправки]\n`;
       }
-      
+
       message += '\n';
     });
-    
-    message += 'Для получения записи консультации или дополнительной информации, пожалуйста, свяжитесь с преподавателем.';
-    
+
+    message += 'Для получения записи консультации или дополнительной информации свяжитесь с преподавателем @AS_Popov87';
+
     await ctx.reply(
       message, 
       { 
@@ -191,7 +191,7 @@ bot.action('show_consultations', async (ctx) => {
         reply_markup: consultationsKeyboard().reply_markup
       }
     );
-    
+
     await ctx.answerCbQuery('Загружена информация о ваших консультациях');
     logWithTime(`Пользователь ${userId} просмотрел свои консультации`);
   } catch (error) {
@@ -222,7 +222,7 @@ bot.action('back_to_menu', async (ctx) => {
   try {
     // Получаем имя пользователя
     const userName = getUserName(ctx.from);
-    
+
     await ctx.editMessageText(
       `Выберите действие, ${userName}:`,
       mainKeyboard()
@@ -241,7 +241,7 @@ app.get('/', (req, res) => {
   const uptime = Math.floor((new Date() - startTime) / 1000);
   const uptimeFormatted = formatUptime(uptime);
   const memoryUsage = process.memoryUsage();
-  
+
   // Получаем статистику пинга, если доступна
   let pingStats = { status: 'not available' };
   try {
@@ -251,7 +251,7 @@ app.get('/', (req, res) => {
   } catch (error) {
     console.error(`Ошибка при получении статистики пинга: ${error.message}`);
   }
-  
+
   res.send(`
     <html>
       <head>
@@ -341,7 +341,7 @@ app.get('/status', (req, res) => {
         arch: process.arch
       }
     };
-    
+
     try {
       if (global.botData.pingManager) {
         status.ping_stats = global.botData.pingManager.getStats();
@@ -349,7 +349,7 @@ app.get('/status', (req, res) => {
     } catch (pingError) {
       status.ping_error = pingError.message;
     }
-    
+
     res.json(status);
     logWithTime('Запрос статуса бота');
   } catch (error) {
@@ -362,7 +362,7 @@ app.get('/health', (req, res) => {
   try {
     const uptime = Math.floor((new Date() - startTime) / 1000);
     const memoryUsage = process.memoryUsage();
-    
+
     res.json({
       status: 'ok',
       uptime: formatUptime(uptime),
@@ -370,7 +370,7 @@ app.get('/health', (req, res) => {
       version: '1.0.0',
       timestamp: new Date().toISOString()
     });
-    
+
     logWithTime('Запрос проверки здоровья');
   } catch (error) {
     console.error(`Ошибка при обработке health-запроса: ${error.message}`);
@@ -385,17 +385,17 @@ async function startApp() {
       console.log(`Server running on port ${PORT}`);
       logWithTime(`Express сервер запущен на порту ${PORT} и адресе 0.0.0.0`);
     });
-    
+
     let webhookSetup = false;
     let attempts = 0;
     const maxAttempts = 5;
-    
+
     while (!webhookSetup && attempts < maxAttempts) {
       attempts++;
       try {
         logWithTime(`Попытка настройки вебхука ${attempts}/${maxAttempts}`);
         webhookSetup = await setupWebhook();
-        
+
         if (webhookSetup) {
           logWithTime(`Вебхук успешно настроен с ${attempts} попытки`);
         } else {
@@ -407,10 +407,10 @@ async function startApp() {
         await new Promise(resolve => setTimeout(resolve, 5000));
       }
     }
-    
+
     if (webhookSetup) {
       logWithTime('Бот успешно настроен в режиме вебхука');
-      
+
       try {
         await setupBotCommands(bot);
         setupCommandHandlers(bot, require('./handlers').handleStart);
@@ -418,20 +418,20 @@ async function startApp() {
       } catch (menuError) {
         logWithTime(`Ошибка при настройке команд меню: ${menuError.message}`);
       }
-      
+
       if (APP_URL) {
         const pingManager = setupPing(APP_URL, 30, 3);
         global.botData.pingManager = pingManager;
         logWithTime(`Настроен улучшенный самопинг для ${APP_URL} с интервалом 30 минут`);
       }
-      
+
       setupScheduler(bot, ADMIN_ID, RAILWAY_OPTIMIZED_MODE);
-      
+
       if (ADMIN_ID && !DISABLE_RESTART_NOTIFICATIONS) {
         try {
           const botInfo = await bot.telegram.getMe();
           const memoryInfo = `Память: ${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB`;
-          
+
           bot.telegram.sendMessage(
             ADMIN_ID,
             `🤖 Бот запущен на Railway!\n\nВремя запуска: ${new Date().toLocaleString()}\nИмя бота: @${botInfo.username}\nID бота: ${botInfo.id}\nURL: ${APP_URL}\nPORT: ${PORT}\nРежим оптимизации: ${RAILWAY_OPTIMIZED_MODE ? 'Включен ✅' : 'Выключен ❌'}\n${memoryInfo}`
