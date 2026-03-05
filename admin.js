@@ -126,7 +126,7 @@ async function confirmPayment(clientId) {
         ...(productId === 'individual' || productId === 'package' ? {
           reply_markup: {
             inline_keyboard: [
-              [{ text: '✉️ Связаться с Александром', url: 'https://t.me/NastuPopova' }]
+              [{ text: '✉️ Связаться с Александром', url: 'https://t.me/AS_Popov87' }]
             ]
           }
         } : {})
@@ -312,7 +312,7 @@ async function sendConsultationRecording(clientId, recordingLink, notes = '') {
         reply_markup: {
           inline_keyboard: [
             [{ text: '🎬 Смотреть запись', url: recordingLink }],
-            [{ text: '✉️ Связаться с Александром', url: 'https://t.me/NastuPopova' }]
+            [{ text: '✉️ Связаться с Александром', url: 'https://t.me/AS_Popov87' }]
           ]
         }
       }
