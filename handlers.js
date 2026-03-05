@@ -271,7 +271,36 @@ async function handleTextInput(ctx) {
     
     logWithTime(`[TEXT] Получено текстовое сообщение от пользователя ${userId}: "${text}"`);
     
-    const { pendingOrders } = global.botData;
+    const { pendingOrders, ADMIN_ID, adminState } = global.botData;
+    
+    // ПРОВЕРКА СОСТОЯНИЯ АДМИНИСТРАТОРА для отправки записи консультации
+    if (adminState && adminState.action === 'waiting_recording_link' && userId.toString() === ADMIN_ID) {
+      logWithTime(`[ADMIN] Получена ссылка на запись от администратора: ${text}`);
+      
+      // Проверяем, что это похоже на ссылку
+      const urlPattern = /^(https?:\/\/|www\.)/i;
+      if (!urlPattern.test(text)) {
+        await ctx.reply('❌ Это не похоже на ссылку. Пожалуйста, отправьте корректную ссылку (начинается с http:// или https://)');
+        return;
+      }
+      
+      const clientId = adminState.clientId;
+      
+      // Вызываем функцию отправки записи консультации
+      const { sendConsultationRecording } = require('./admin');
+      const success = await sendConsultationRecording(clientId, text);
+      
+      if (success) {
+        await ctx.reply(`✅ Запись консультации успешно отправлена клиенту (ID: ${clientId})`);
+        logWithTime(`[ADMIN] Запись успешно отправлена клиенту ${clientId}`);
+      } else {
+        await ctx.reply(`❌ Произошла ошибка при отправке записи клиенту (ID: ${clientId})`);
+      }
+      
+      // Очищаем состояние администратора
+      delete global.botData.adminState;
+      return;
+    }
     
     // Если нет ожидающего заказа, возможно, нам нужно показать главное меню
     if (!pendingOrders[userId]) {
