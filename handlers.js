@@ -267,7 +267,7 @@ async function handleConfirmBuy(ctx) {
 async function handleTextInput(ctx) {
   try {
     const userId = ctx.from.id;
-    const text = ctx.message.text;
+    const text = ctx.message.text.trim(); // Добавлен .trim() для удаления пробелов
     
     logWithTime(`[TEXT] Получено текстовое сообщение от пользователя ${userId}: "${text}"`);
     
@@ -281,7 +281,7 @@ async function handleTextInput(ctx) {
       if (pendingOrders[userId].status === 'waiting_email') {
         logWithTime(`[TEXT] Обработка email от пользователя ${userId}`);
         
-        // Проверка формата email
+        // Проверка формата email (текст уже очищен от пробелов выше)
         if (!validators.email(text)) {
           logWithTime(`[TEXT] Некорректный формат email: ${text}`);
           return await ctx.reply(messageTemplates.emailInvalid);
