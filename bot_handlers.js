@@ -44,11 +44,10 @@ bot.action('show_info', async (ctx) => {
     // Небольшая задержка для лучшего UX
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Отправляем основной текст
+    // Отправляем основной текст (БЕЗ MARKDOWN для безопасности)
     await ctx.reply(
-      `ℹ️ *Дыхательная гимнастика по методу Бутейко с Александром Поповым*\n\nПривет, ${userName}!\n\n*Александр Попов* - сертифицированный инструктор по дыхательной гимнастике Бутейко.\n\nНаши курсы помогут вам:\n\n• Повысить жизненную энергию\n• Снизить уровень стресса\n• Улучшить качество сна\n• Повысить иммунитет\n• Улучшить работу дыхательной системы\n\nВыберите \"🛍️ Купить курс\" в меню, чтобы ознакомиться с доступными программами.\n\n📞 Связаться с преподавателем: @AS_Popov87`,
+      `ℹ️ Дыхательная гимнастика по методу Бутейко с Александром Поповым\n\nПривет, ${userName}!\n\nАлександр Попов - сертифицированный инструктор по дыхательной гимнастике Бутейко.\n\nНаши курсы помогут вам:\n\n• Повысить жизненную энергию\n• Снизить уровень стресса\n• Улучшить качество сна\n• Повысить иммунитет\n• Улучшить работу дыхательной системы\n\nВыберите 🛍️ Купить курс в меню, чтобы ознакомиться с доступными программами.\n\n📞 Связаться с преподавателем: @AS_Popov87`,
       { 
-        parse_mode: 'Markdown',
         reply_markup: {
           ...mainKeyboard().reply_markup,
           remove_keyboard: true
@@ -82,14 +81,14 @@ bot.action('show_purchases', async (ctx) => {
 
     // Если есть заказы, показываем их
     const orders = completedOrders[userId];
-    let message = '*Ваши покупки:*\n\n';
+    let message = 'Ваши покупки:\n\n';
 
     orders.forEach((order, index) => {
       const product = products[order.productId];
       const orderDate = new Date(order.completedAt).toLocaleDateString();
       const orderNumber = order.orderId || `#${Date.now().toString().slice(-6)}`;
 
-      message += `*${index + 1}. ${product.name}*\n`;
+      message += `${index + 1}. ${product.name}\n`;
       message += `🆔 Заказ: ${orderNumber}\n`;
       message += `📅 Дата: ${orderDate}\n`;
       message += `💳 Цена: ${product.price}\n`;
@@ -106,7 +105,6 @@ bot.action('show_purchases', async (ctx) => {
     await ctx.reply(
       message, 
       { 
-        parse_mode: 'Markdown',
         reply_markup: mainKeyboard().reply_markup 
       }
     );
@@ -119,7 +117,7 @@ bot.action('show_purchases', async (ctx) => {
   }
 });
 
-// Обработчик для просмотра консультаций
+// Обработчик для просмотра консультаций (БЕЗ MARKDOWN!)
 bot.action('show_consultations', async (ctx) => {
   try {
     const userId = ctx.from.id;
@@ -128,7 +126,7 @@ bot.action('show_consultations', async (ctx) => {
     // Проверяем, есть ли у пользователя консультации
     if (!completedOrders[userId] || completedOrders[userId].length === 0) {
       await ctx.reply(
-        'У вас пока нет консультаций. Выберите "🛍️ Купить курс", чтобы приобрести индивидуальную консультацию.',
+        'У вас пока нет консультаций. Выберите 🛍️ Купить курс, чтобы приобрести индивидуальную консультацию.',
         { 
           reply_markup: {
             ...mainKeyboard().reply_markup,
@@ -147,7 +145,7 @@ bot.action('show_consultations', async (ctx) => {
 
     if (consultations.length === 0) {
       await ctx.reply(
-        'У вас пока нет индивидуальных консультаций. Выберите "🛍️ Купить курс", чтобы приобрести консультацию.',
+        'У вас пока нет индивидуальных консультаций. Выберите 🛍️ Купить курс, чтобы приобрести консультацию.',
         { 
           reply_markup: {
             ...mainKeyboard().reply_markup,
@@ -159,23 +157,23 @@ bot.action('show_consultations', async (ctx) => {
       return;
     }
 
-    // Если есть консультации, показываем их
-    let message = '*Ваши консультации:*\n\n';
+    // Если есть консультации, показываем их (БЕЗ MARKDOWN!)
+    let message = 'Ваши консультации:\n\n';
 
     consultations.forEach((consultation, index) => {
       const product = products[consultation.productId];
       const orderDate = new Date(consultation.completedAt).toLocaleDateString();
       const orderNumber = consultation.orderId || `#${Date.now().toString().slice(-6)}`;
 
-      message += `*${index + 1}. ${product.name}*\n`;
+      message += `${index + 1}. ${product.name}\n`;
       message += `🆔 Заказ: ${orderNumber}\n`;
       message += `📅 Дата: ${orderDate}\n`;
 
       if (consultation.recordingSent) {
-        message += `🎬 Запись: ✅ [Доступна]\n`;
+        message += `🎬 Запись: ✅ Доступна\n`;
         message += `🔗 Ссылка: ${consultation.recordingLink || 'Свяжитесь с преподавателем'}\n`;
       } else {
-        message += `🎬 Запись: ⏳ [Ожидает отправки]\n`;
+        message += `🎬 Запись: ⏳ Ожидает отправки\n`;
       }
 
       message += '\n';
@@ -186,7 +184,6 @@ bot.action('show_consultations', async (ctx) => {
     await ctx.reply(
       message, 
       { 
-        parse_mode: 'Markdown',
         reply_markup: consultationsKeyboard().reply_markup
       }
     );
@@ -385,11 +382,11 @@ async function startApp() {
       logWithTime(`Express сервер запущен на порту ${PORT} и адресе 0.0.0.0`);
     });
 
-    // ВАЖНО: ЗАПУСКАЕМ БОТА ЧЕРЕЗ bot.launch() КАК В LEAD-BOT!
-    // Telegraf сам управляет вебхуком
+    // ВАЖНО: ЗАПУСКАЕМ БОТА В WEBHOOK MODE (НЕ POLLING!)
     try {
-      await bot.launch();
-      logWithTime('🚀 Бот успешно запущен через bot.launch() (как в lead-bot)');
+      // НЕ ВЫЗЫВАЕМ bot.launch() - вместо этого просто логируем
+      // Telegraf уже настроен на webhook через bot.webhookCallback() в config.js
+      logWithTime('🚀 Бот работает в режиме webhook (обработчик уже настроен в config.js)');
     } catch (launchError) {
       console.error('❌ Ошибка при запуске бота:', launchError.message);
       throw launchError;
