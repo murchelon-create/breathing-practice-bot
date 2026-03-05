@@ -1,7 +1,7 @@
 // Файл: bot_handlers.js
 // Дополнительные обработчики и запуск сервера с оптимизацией для Railway
 
-// Импортируем общую конфигурацию (БЕЗ setupWebhook!)
+// Импортируем общую конфигурацию
 const { 
   app, 
   bot, 
@@ -385,10 +385,15 @@ async function startApp() {
       logWithTime(`Express сервер запущен на порту ${PORT} и адресе 0.0.0.0`);
     });
 
-    // ВЕБХУК ТЕПЕРЬ УСТАНАВЛИВАЕТСЯ АВТОМАТИЧЕСКИ В index.js
-    // Здесь только настраиваем остальные компоненты
-    
-    logWithTime('Бот запущен в режиме вебхука (управление в index.js)');
+    // ВАЖНО: ЗАПУСКАЕМ БОТА ЧЕРЕЗ bot.launch() КАК В LEAD-BOT!
+    // Telegraf сам управляет вебхуком
+    try {
+      await bot.launch();
+      logWithTime('🚀 Бот успешно запущен через bot.launch() (как в lead-bot)');
+    } catch (launchError) {
+      console.error('❌ Ошибка при запуске бота:', launchError.message);
+      throw launchError;
+    }
 
     try {
       await setupBotCommands(bot);
@@ -431,6 +436,7 @@ process.once('SIGINT', () => {
   logWithTime('Получен сигнал SIGINT, останавливаем бота...');
   const memoryInfo = `Память при остановке: ${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB`;
   logWithTime(memoryInfo);
+  bot.stop('SIGINT');
   logWithTime('Бот остановлен по SIGINT (вебхук сохранён)');
 });
 
@@ -438,6 +444,7 @@ process.once('SIGTERM', () => {
   logWithTime('Получен сигнал SIGTERM, останавливаем бота...');
   const memoryInfo = `Память при остановке: ${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB`;
   logWithTime(memoryInfo);
+  bot.stop('SIGTERM');
   logWithTime('Бот остановлен по SIGTERM (вебхук сохранён)');
 });
 
