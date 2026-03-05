@@ -273,7 +273,94 @@ async function handleTextInput(ctx) {
     
     const { pendingOrders, ADMIN_ID, adminState } = global.botData;
     
-    // ПРОВЕРКА СОСТОЯНИЯ АДМИНИСТРАТОРА для отправки записи консультации
+    // СНАЧАЛА ПРОВЕРЯЕМ ОЖИДАЮЩИЕ ЗАКАЗЫ (ВЫСОКИЙ ПРИОРИТЕТ)
+    if (pendingOrders[userId]) {
+      logWithTime(`[TEXT] Найден ожидающий заказ для пользователя ${userId}, статус: ${pendingOrders[userId].status}`);
+      
+      // Обработка email
+      if (pendingOrders[userId].status === 'waiting_email') {
+        logWithTime(`[TEXT] Обработка email от пользователя ${userId}`);
+        
+        // Проверка формата email
+        if (!validators.email(text)) {
+          logWithTime(`[TEXT] Некорректный формат email: ${text}`);
+          return await ctx.reply(messageTemplates.emailInvalid);
+        }
+        
+        // Сохраняем email
+        pendingOrders[userId].email = text;
+        pendingOrders[userId].status = 'waiting_phone';
+        
+        logWithTime(`[TEXT] Email сохранен, новый статус: waiting_phone`);
+        
+        // Запрашиваем номер телефона
+        await ctx.reply(messageTemplates.phoneRequest);
+        
+        logWithTime(`[TEXT] Запрос телефона отправлен пользователю ${userId}`);
+        return;
+      } 
+      // Обработка номера телефона
+      else if (pendingOrders[userId].status === 'waiting_phone') {
+        logWithTime(`[TEXT] Обработка номера телефона от пользователя ${userId}`);
+        
+        // Проверка формата телефона
+        const cleanedPhone = text.replace(/\s+/g, '');
+        
+        if (!validators.phone(cleanedPhone)) {
+          logWithTime(`[TEXT] Некорректный формат телефона: ${cleanedPhone}`);
+          return await ctx.reply(messageTemplates.phoneInvalid);
+        }
+        
+        // Сохраняем телефон и обновляем статус
+        pendingOrders[userId].phone = cleanedPhone;
+        pendingOrders[userId].status = 'waiting_payment';
+        
+        const product = products[pendingOrders[userId].productId];
+        
+        logWithTime(`[TEXT] Телефон сохранен, новый статус: waiting_payment`);
+        
+        try {
+          // Отправляем изображение с заказом
+          await ctx.replyWithPhoto(
+            { source: 'files/logo.jpg' },
+            { caption: `📋 Ваш заказ: ${product.name}`, parse_mode: '' }
+          );
+        } catch (photoError) {
+          console.error(`[ERROR] Не удалось отправить логотип: ${photoError.message}`);
+          // Продолжаем выполнение даже если не удалось отправить фото
+        }
+        
+        // Задержка для лучшего UX
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // ВАЖНО: Убираем parse_mode чтобы избежать ошибок парсинга
+        await ctx.reply(
+          messageTemplates.orderReady(product.name, product.price),
+          { 
+            reply_markup: {
+              ...mainKeyboard().reply_markup,
+              remove_keyboard: true
+            }
+          }
+        );
+        
+        logWithTime(`[TEXT] Информация о заказе отправлена пользователю ${userId}`);
+        
+        // Отправляем уведомление администратору
+        try {
+          logWithTime(`[TEXT] Отправка уведомления администратору о новом заказе`);
+          const { notifyAdmin } = require('./admin');
+          await notifyAdmin(userId);
+          logWithTime(`[TEXT] Уведомление успешно отправлено администратору`);
+        } catch (adminError) {
+          console.error(`[ERROR] Ошибка при уведомлении администратора: ${adminError.message}`);
+          console.error(`[ERROR] Stack trace: ${adminError.stack}`);
+        }
+        return;
+      }
+    }
+    
+    // ЗАТЕМ ПРОВЕРЯЕМ СОСТОЯНИЕ АДМИНИСТРАТОРА (НИЗКИЙ ПРИОРИТЕТ)
     if (adminState && adminState.action === 'waiting_recording_link' && userId.toString() === ADMIN_ID) {
       logWithTime(`[ADMIN] Получена ссылка на запись от администратора: ${text}`);
       
@@ -302,112 +389,27 @@ async function handleTextInput(ctx) {
       return;
     }
     
-    // Если нет ожидающего заказа, возможно, нам нужно показать главное меню
-    if (!pendingOrders[userId]) {
-      logWithTime(`[TEXT] У пользователя ${userId} нет ожидающего заказа`);
-      
-      // Если получена команда /start, не реагируем - она обрабатывается отдельно
-      if (text === '/start') {
-        logWithTime(`[TEXT] Получена команда /start, пропускаем обработку текста`);
-        return;
-      }
-      
-      // Для любого другого текста показываем меню и подсказку, удаляем клавиатуру
-      logWithTime(`[TEXT] Отправка подсказки с меню пользователю ${userId}`);
-      await ctx.reply(
-        'Используйте кнопки меню ниже для навигации:',
-        {
-          reply_markup: {
-            ...mainKeyboard().reply_markup,
-            remove_keyboard: true
-          }
-        }
-      );
-      logWithTime(`[TEXT] Подсказка отправлена пользователю ${userId}`);
+    // Если нет ожидающего заказа и не админ, показываем меню
+    logWithTime(`[TEXT] У пользователя ${userId} нет ожидающего заказа`);
+    
+    // Если получена команда /start, не реагируем - она обрабатывается отдельно
+    if (text === '/start') {
+      logWithTime(`[TEXT] Получена команда /start, пропускаем обработку текста`);
       return;
     }
     
-    logWithTime(`[TEXT] Найден ожидающий заказ для пользователя ${userId}, статус: ${pendingOrders[userId].status}`);
-    
-    // Обработка email
-    if (pendingOrders[userId].status === 'waiting_email') {
-      logWithTime(`[TEXT] Обработка email от пользователя ${userId}`);
-      
-      // Проверка формата email
-      if (!validators.email(text)) {
-        logWithTime(`[TEXT] Некорректный формат email: ${text}`);
-        return await ctx.reply(messageTemplates.emailInvalid);
-      }
-      
-      // Сохраняем email
-      pendingOrders[userId].email = text;
-      pendingOrders[userId].status = 'waiting_phone';
-      
-      logWithTime(`[TEXT] Email сохранен, новый статус: waiting_phone`);
-      
-      // Запрашиваем номер телефона
-      await ctx.reply(messageTemplates.phoneRequest);
-      
-      logWithTime(`[TEXT] Запрос телефона отправлен пользователю ${userId}`);
-    } 
-    // Обработка номера телефона
-    else if (pendingOrders[userId].status === 'waiting_phone') {
-      logWithTime(`[TEXT] Обработка номера телефона от пользователя ${userId}`);
-      
-      // Проверка формата телефона
-      const cleanedPhone = text.replace(/\s+/g, '');
-      
-      if (!validators.phone(cleanedPhone)) {
-        logWithTime(`[TEXT] Некорректный формат телефона: ${cleanedPhone}`);
-        return await ctx.reply(messageTemplates.phoneInvalid);
-      }
-      
-      // Сохраняем телефон и обновляем статус
-      pendingOrders[userId].phone = cleanedPhone;
-      pendingOrders[userId].status = 'waiting_payment';
-      
-      const product = products[pendingOrders[userId].productId];
-      
-      logWithTime(`[TEXT] Телефон сохранен, новый статус: waiting_payment`);
-      
-      try {
-        // Отправляем изображение с заказом
-        await ctx.replyWithPhoto(
-          { source: 'files/logo.jpg' },
-          { caption: `📋 Ваш заказ: ${product.name}`, parse_mode: '' }
-        );
-      } catch (photoError) {
-        console.error(`[ERROR] Не удалось отправить логотип: ${photoError.message}`);
-        // Продолжаем выполнение даже если не удалось отправить фото
-      }
-      
-      // Задержка для лучшего UX
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // ВАЖНО: Убираем parse_mode чтобы избежать ошибок парсинга
-      await ctx.reply(
-        messageTemplates.orderReady(product.name, product.price),
-        { 
-          reply_markup: {
-            ...mainKeyboard().reply_markup,
-            remove_keyboard: true
-          }
+    // Для любого другого текста показываем меню и подсказку, удаляем клавиатуру
+    logWithTime(`[TEXT] Отправка подсказки с меню пользователю ${userId}`);
+    await ctx.reply(
+      'Используйте кнопки меню ниже для навигации:',
+      {
+        reply_markup: {
+          ...mainKeyboard().reply_markup,
+          remove_keyboard: true
         }
-      );
-      
-      logWithTime(`[TEXT] Информация о заказе отправлена пользователю ${userId}`);
-      
-      // Отправляем уведомление администратору
-      try {
-        logWithTime(`[TEXT] Отправка уведомления администратору о новом заказе`);
-        const { notifyAdmin } = require('./admin');
-        await notifyAdmin(userId);
-        logWithTime(`[TEXT] Уведомление успешно отправлено администратору`);
-      } catch (adminError) {
-        console.error(`[ERROR] Ошибка при уведомлении администратора: ${adminError.message}`);
-        console.error(`[ERROR] Stack trace: ${adminError.stack}`);
       }
-    }
+    );
+    logWithTime(`[TEXT] Подсказка отправлена пользователю ${userId}`);
   } catch (error) {
     console.error(`[ERROR] Ошибка при обработке текстового сообщения: ${error.message}`);
     console.error(`[ERROR] Stack trace: ${error.stack}`);
