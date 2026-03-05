@@ -107,7 +107,7 @@ bot.action(/buy_(.+)/, handleBuyAction);
 
 // Обработчик для простой кнопки оформления заказа - универсальный для всех продуктов
 bot.action(/confirm_simple_(.+)/, async (ctx) => {
-  console.log('========== УПРОЩЕННЫЙ ОБРАБОТЧИК ЗАПУЩЕН ==========');
+  console.log('========== УПРОЩЕННЫЙ ОБРАБОТЧИК ЗАПУЩЕН ==========')
   const productId = ctx.match[1];
   const userId = ctx.from.id;
   console.log(`Пользователь ${userId} нажал на простую кнопку для продукта ${productId}`);
@@ -201,7 +201,61 @@ bot.action(/confirm_payment_(.+)/, async (ctx) => {
   }
 });
 
-// ОБРАБОТЧИК КНОПКИ "РАБОТА ЗАВЕРШЕНА"
+// ОБРАБОТЧИК ОТМЕНЫ ЗАКАЗА (ДЛЯ АДМИНА)
+bot.action(/cancel_order_(.+)/, async (ctx) => {
+  const clientId = parseInt(ctx.match[1]);
+  const adminId = ctx.from.id;
+  
+  logWithTime(`[АДМИН] Админ ${adminId} отменяет заказ для клиента ${clientId}`);
+  
+  try {
+    // Проверяем, что это действительно админ
+    if (adminId.toString() !== ADMIN_ID) {
+      await ctx.answerCbQuery('❌ У вас нет прав для этого действия');
+      return;
+    }
+    
+    const order = pendingOrders[clientId];
+    
+    if (!order) {
+      await ctx.answerCbQuery('❌ Заказ не найден');
+      await bot.telegram.sendMessage(ADMIN_ID, '❌ Заказ не найден в списке ожидающих.');
+      return;
+    }
+    
+    const product = products[order.productId];
+    
+    // Удаляем заказ из ожидающих
+    delete pendingOrders[clientId];
+    
+    // Уведомляем клиента
+    await bot.telegram.sendMessage(
+      clientId,
+      `❌ Ваш заказ на "${product.name}" был отменён.\n\nЕсли у вас есть вопросы, пожалуйста, свяжитесь с [Александром](https://t.me/AS_Popov87).`,
+      { 
+        parse_mode: 'Markdown',
+        reply_markup: mainKeyboard().reply_markup 
+      }
+    );
+    
+    // Убираем кнопки с сообщения админа
+    await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+    
+    // Уведомляем админа
+    await bot.telegram.sendMessage(
+      ADMIN_ID,
+      `❌ Заказ отменён:\nПродукт: ${product.name}\nКлиент ID: ${clientId}\nКлиент уведомлён об отмене.`
+    );
+    
+    await ctx.answerCbQuery('✅ Заказ отменён');
+    logWithTime(`[АДМИН] Заказ отменён для клиента ${clientId}`);
+  } catch (error) {
+    console.error(`[АДМИН] Ошибка при отмене заказа: ${error.message}`);
+    await ctx.answerCbQuery('❌ Ошибка при отмене');
+  }
+});
+
+// ОБРАБОТЧИК КНОПКИ "РАБОТА ЗАВЕРШЕНА" (С ПРОСЬБОЙ О ОТЗЫВЕ)
 bot.action(/work_completed_(.+)/, async (ctx) => {
   const clientId = parseInt(ctx.match[1]);
   const adminId = ctx.from.id;
@@ -212,11 +266,31 @@ bot.action(/work_completed_(.+)/, async (ctx) => {
       return;
     }
     
-    // Убираем все кнопки
-    await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
-    await ctx.answerCbQuery('✅ Работа с клиентом завершена');
+    // Отправляем клиенту просьбу о отзыве
+    await bot.telegram.sendMessage(
+      clientId,
+      `⭐ Спасибо за работу с нами!\n\nЕсли вам всё понравилось, будем очень благодарны за ваш отзыв! 🙏\n\nВаше мнение поможет другим людям принять решение о начале занятий дыхательной гимнастикой.\n\nНапишите несколько слов о вашем опыте в личные сообщения [Александру](https://t.me/AS_Popov87). 🙌`,
+      { 
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '✉️ Написать отзыв', url: 'https://t.me/AS_Popov87' }]
+          ]
+        }
+      }
+    );
     
-    logWithTime(`[АДМИН] Работа завершена для клиента ${clientId}`);
+    // Убираем все кнопки с сообщения админа
+    await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+    await ctx.answerCbQuery('✅ Работа с клиентом завершена. Просьба о отзыве отправлена.');
+    
+    // Уведомляем админа
+    await bot.telegram.sendMessage(
+      ADMIN_ID,
+      `✅ Работа завершена для клиента (ID: ${clientId}).\nКлиенту отправлена просьба оставить отзыв.`
+    );
+    
+    logWithTime(`[АДМИН] Работа завершена для клиента ${clientId}, отправлена просьба о отзыве`);
   } catch (error) {
     console.error(`[АДМИН] Ошибка: ${error.message}`);
     await ctx.answerCbQuery('Произошла ошибка');
