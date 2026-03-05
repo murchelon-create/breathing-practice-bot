@@ -105,6 +105,59 @@ bot.action('back_to_menu', async (ctx) => {
 // Обработка покупок - ТОЛЬКО ОДИН обработчик для выбора продуктов
 bot.action(/buy_(.+)/, handleBuyAction);
 
+// ОБРАБОТЧИК ЗАМЕНЫ СТАРОГО ЗАКАЗА НОВЫМ
+bot.action(/replace_order_(.+)/, async (ctx) => {
+  const productId = ctx.match[1];
+  const userId = ctx.from.id;
+  
+  logWithTime(`[REPLACE_ORDER] Пользователь ${userId} подтвердил замену заказа на ${productId}`);
+  
+  try {
+    const product = products[productId];
+    
+    if (!product) {
+      await ctx.answerCbQuery('❌ Продукт не найден');
+      return;
+    }
+    
+    // Сохраняем информацию о старом заказе (для логов)
+    const oldOrder = pendingOrders[userId];
+    const oldProduct = oldOrder ? products[oldOrder.productId] : null;
+    
+    // Удаляем старый заказ
+    delete pendingOrders[userId];
+    
+    logWithTime(`[REPLACE_ORDER] Старый заказ "${oldProduct?.name || 'неизвестно'}" удалён`);
+    
+    // Уведомляем клиента
+    await ctx.reply(
+      `✅ Ваш предыдущий заказ отменён.\n\nНачинаем оформление нового заказа на "${product.name}".`
+    );
+    
+    // Небольшая задержка
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Отправляем запрос на email
+    await ctx.reply(
+      messageTemplates.emailRequest(product.name),
+      { parse_mode: 'Markdown' }
+    );
+    
+    // Сохраняем информацию о новом заказе
+    pendingOrders[userId] = {
+      productId: productId,
+      status: 'waiting_email',
+      timestamp: new Date().toISOString()
+    };
+    
+    await ctx.answerCbQuery('✅ Начинаем новый заказ');
+    logWithTime(`[REPLACE_ORDER] Новый заказ на "${product.name}" создан для пользователя ${userId}`);
+  } catch (error) {
+    console.error(`[REPLACE_ORDER] Ошибка: ${error.message}`);
+    await ctx.answerCbQuery('Произошла ошибка');
+  }
+});
+
 // Обработчик для простой кнопки оформления заказа - универсальный для всех продуктов
 bot.action(/confirm_simple_(.+)/, async (ctx) => {
   console.log('========== УПРОЩЕННЫЙ ОБРАБОТЧИК ЗАПУЩЕН ==========')
