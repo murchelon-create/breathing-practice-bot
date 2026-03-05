@@ -36,14 +36,35 @@ bot.action('show_info', async (ctx) => {
 
     await ctx.replyWithPhoto(
       { source: 'files/logo.jpg' },
-      { caption: '🌬️ Дыхательная гимнастика по методу Бутейко с Александром Поповым' }
+      { caption: '🌬️ Метод Бутейко - научно обоснованная дыхательная гимнастика' }
     );
 
     await new Promise(resolve => setTimeout(resolve, 500));
 
     await ctx.reply(
-      `ℹ️ Дыхательная гимнастика по методу Бутейко с Александром Поповым\n\nПривет, ${userName}!\n\nАлександр Попов - сертифицированный инструктор по дыхательной гимнастике Бутейко.\n\nНаши курсы помогут вам:\n\n• Повысить жизненную энергию\n• Снизить уровень стресса\n• Улучшить качество сна\n• Повысить иммунитет\n• Улучшить работу дыхательной системы\n\nВыберите 🛍️ Купить курс в меню, чтобы ознакомиться с доступными программами.\n\n📞 Связаться с преподавателем: @AS_Popov87`,
+      `Привет, ${userName}!\n\n` +
+      `🧬 МЕТОД БУТЕЙКО\n\n` +
+      `Константин Павлович Бутейко — первый врач-физиолог, который доказал связь между неправильным дыханием и развитием более 150 заболеваний.\n\n` +
+      `✅ Что происходит при правильном дыхании:\n` +
+      `• Нормализуется уровень CO₂ в крови\n` +
+      `• Расширяются сосуды и бронхи\n` +
+      `• Улучшается кислородное питание тканей\n` +
+      `• Снижается спазм гладкой мускулатуры\n\n` +
+      `📊 Доказанная эффективность:\n` +
+      `Метод признан Минздравом РФ и применяется в клинической практике с 1985 года.\n\n` +
+      `🌟 Результаты зависят от вашей цели:\n` +
+      `• Снять стресс и напряжение — несколько минут практики\n` +
+      `• Улучшить сон и самочувствие — регулярная практика\n` +
+      `• Серьёзные изменения в здоровье — требуют времени и системного подхода\n\n` +
+      `💪 Преимущества метода:\n` +
+      `• Естественный подход без лекарств\n` +
+      `• Безопасен при правильном освоении\n` +
+      `• Навык остаётся с вами на всю жизнь\n` +
+      `• Можно практиковать в любом месте\n\n` +
+      `Выберите 🛍️ Купить курс в меню, чтобы ознакомиться с доступными программами.\n\n` +
+      `📞 Связаться с преподавателем: [Александр Попов](https://t.me/AS_Popov87)`,
       { 
+        parse_mode: 'Markdown',
         reply_markup: {
           ...mainKeyboard().reply_markup,
           remove_keyboard: true
@@ -75,14 +96,14 @@ bot.action('show_purchases', async (ctx) => {
     }
 
     const orders = completedOrders[userId];
-    let message = 'Ваши покупки:\n\n';
+    let message = '*Ваши покупки:*\n\n';
 
     orders.forEach((order, index) => {
       const product = products[order.productId];
       const orderDate = new Date(order.completedAt).toLocaleDateString();
       const orderNumber = order.orderId || `#${Date.now().toString().slice(-6)}`;
 
-      message += `${index + 1}. ${product.name}\n`;
+      message += `*${index + 1}. ${product.name}*\n`;
       message += `🆔 Заказ: ${orderNumber}\n`;
       message += `📅 Дата: ${orderDate}\n`;
       message += `💳 Цена: ${product.price}\n`;
@@ -94,11 +115,12 @@ bot.action('show_purchases', async (ctx) => {
       message += '\n';
     });
 
-    message += '\nДля повторного доступа к материалам напишите в чат администратору @AS_Popov87';
+    message += '\nДля повторного доступа к материалам напишите [Александру](https://t.me/AS_Popov87)';
 
     await ctx.reply(
       message, 
       { 
+        parse_mode: 'Markdown',
         reply_markup: mainKeyboard().reply_markup 
       }
     );
@@ -111,7 +133,7 @@ bot.action('show_purchases', async (ctx) => {
   }
 });
 
-// Обработчик для просмотра консультаций (БЕЗ MARKDOWN!)
+// Обработчик для просмотра консультаций
 bot.action('show_consultations', async (ctx) => {
   try {
     const userId = ctx.from.id;
@@ -149,32 +171,33 @@ bot.action('show_consultations', async (ctx) => {
       return;
     }
 
-    let message = 'Ваши консультации:\n\n';
+    let message = '*Ваши консультации:*\n\n';
 
     consultations.forEach((consultation, index) => {
       const product = products[consultation.productId];
       const orderDate = new Date(consultation.completedAt).toLocaleDateString();
       const orderNumber = consultation.orderId || `#${Date.now().toString().slice(-6)}`;
 
-      message += `${index + 1}. ${product.name}\n`;
+      message += `*${index + 1}. ${product.name}*\n`;
       message += `🆔 Заказ: ${orderNumber}\n`;
       message += `📅 Дата: ${orderDate}\n`;
 
       if (consultation.recordingSent) {
-        message += `🎬 Запись: ✅ Доступна\n`;
+        message += `🎬 Запись: ✅ [Доступна]\n`;
         message += `🔗 Ссылка: ${consultation.recordingLink || 'Свяжитесь с преподавателем'}\n`;
       } else {
-        message += `🎬 Запись: ⏳ Ожидает отправки\n`;
+        message += `🎬 Запись: ⏳ [Ожидает отправки]\n`;
       }
 
       message += '\n';
     });
 
-    message += 'Для получения записи консультации или дополнительной информации свяжитесь с преподавателем @AS_Popov87';
+    message += 'Для получения записи консультации или дополнительной информации свяжитесь с [Александром](https://t.me/AS_Popov87)';
 
     await ctx.reply(
       message, 
       { 
+        parse_mode: 'Markdown',
         reply_markup: consultationsKeyboard().reply_markup
       }
     );
