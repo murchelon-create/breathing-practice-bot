@@ -176,12 +176,11 @@ async function confirmPayment(clientId) {
         // Небольшая задержка между сообщениями для предотвращения флуда API
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Отправляем информацию о видеоуроке
+        // Отправляем информацию о видеоуроке (БЕЗ MARKDOWN для избежания ошибок с символами _ в URL)
         await bot.telegram.sendMessage(
           clientId,
-          `🎬 *Ваш видеоурок готов к просмотру!*\n\n${product.description}\n\n🔗 *Ссылка на видео*: ${product.videoLink}\n\nПриятного обучения!`,
+          `🎬 ВАШ ВИДЕОУРОК ГОТОВ К ПРОСМОТРУ!\n\n${product.description}\n\n🔗 Ссылка на видео: ${product.videoLink}\n\nПриятного обучения!`,
           {
-            parse_mode: 'Markdown',
             disable_web_page_preview: false,
             reply_markup: {
               inline_keyboard: [
@@ -196,12 +195,11 @@ async function confirmPayment(clientId) {
         // Небольшая задержка между сообщениями
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Отправляем дополнительную информацию с меню и удаляем клавиатуру
+        // Отправляем дополнительную информацию с меню (БЕЗ MARKDOWN)
         await bot.telegram.sendMessage(
           clientId,
           messageTemplates.orderComplete,
           { 
-            parse_mode: 'Markdown',
             reply_markup: {
               ...mainKeyboard().reply_markup,
               remove_keyboard: true
