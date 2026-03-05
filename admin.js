@@ -138,11 +138,7 @@ async function confirmPayment(clientId) {
       // Для индивидуальных занятий отправляем информацию о следующих шагах
       await bot.telegram.sendMessage(
         clientId,
-        `Спасибо за заказ! Александр свяжется с Вами в ближайшее время для уточнения удобного времени проведения консультации. 
-
-Вы также можете самостоятельно связаться с ним, нажав кнопку ниже.
-
-В главном меню Вы можете ознакомиться с другими нашими предложениями.`,
+        `Спасибо за заказ! Александр свяжется с Вами в ближайшее время для уточнения удобного времени проведения консультации. \n\nВы также можете самостоятельно связаться с ним, нажав кнопку ниже.\n\nВ главном меню Вы можете ознакомиться с другими нашими предложениями.`,
         { 
           reply_markup: {
             ...mainKeyboard().reply_markup,
@@ -249,6 +245,7 @@ async function confirmPayment(clientId) {
     logWithTime(`Заказ пользователя ${clientId} завершен успешно`);
   } catch (error) {
     console.error(`Error in confirmPayment: ${error.message}`);
+    const { bot, ADMIN_ID } = global.botData;
     await bot.telegram.sendMessage(
       ADMIN_ID,
       `❌ Ошибка при обработке подтверждения: ${error.message}`
@@ -263,9 +260,9 @@ async function confirmPayment(clientId) {
  * @param {string} notes - Дополнительные заметки или рекомендации (опционально)
  */
 async function sendConsultationRecording(clientId, recordingLink, notes = '') {
+  const { bot, ADMIN_ID, completedOrders } = global.botData;
+  
   try {
-    const { bot, ADMIN_ID, completedOrders } = global.botData;
-    
     // Находим последний заказ клиента с индивидуальным занятием или пакетом
     const clientOrders = completedOrders[clientId] || [];
     const consultationOrders = clientOrders.filter(order => 
@@ -291,37 +288,27 @@ async function sendConsultationRecording(clientId, recordingLink, notes = '') {
       clientId,
       { source: 'files/logo.jpg' },
       { 
-        caption: '🎥 Запись вашей консультации готова!',
-        parse_mode: 'Markdown'
+        caption: '🎥 Запись вашей консультации готова!'
       }
     );
     
     // Задержка
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Формируем сообщение с записью консультации
-    const message = `
-🎥 *Запись вашей консультации готова!*
-
-Спасибо за прохождение индивидуального занятия! Как и обещали, отправляем вам запись вашей консультации. Вы можете вернуться к ней в любой момент и повторить упражнения.
-
-🔗 *Ссылка на запись*: ${recordingLink}
-
-${notes ? `📝 *Дополнительные рекомендации*:\n${notes}\n` : ''}
-
-✅ *Информация о заказе*:
-• ID заказа: #${latestOrder.orderId || 'N/A'}
-• Дата заказа: ${new Date(latestOrder.completedAt).toLocaleDateString()}
-
-Если у вас возникнут вопросы по материалам консультации, не стесняйтесь обращаться!
-`;
+    // Формируем сообщение с записью консультации (БЕЗ MARKDOWN для избежания ошибок парсинга)
+    let message = `🎥 ЗАПИСЬ ВАШЕЙ КОНСУЛЬТАЦИИ ГОТОВА!\n\nСпасибо за прохождение индивидуального занятия! Как и обещали, отправляем вам запись вашей консультации. Вы можете вернуться к ней в любой момент и повторить упражнения.\n\n🔗 Ссылка на запись: ${recordingLink}`;
     
-    // Отправляем сообщение клиенту
+    if (notes) {
+      message += `\n\n📝 Дополнительные рекомендации:\n${notes}`;
+    }
+    
+    message += `\n\n✅ Информация о заказе:\n• ID заказа: #${latestOrder.orderId || 'N/A'}\n• Дата заказа: ${new Date(latestOrder.completedAt).toLocaleDateString()}\n\nЕсли у вас возникнут вопросы по материалам консультации, не стесняйтесь обращаться!`;
+    
+    // Отправляем сообщение клиенту БЕЗ parse_mode
     await bot.telegram.sendMessage(
       clientId,
       message,
       { 
-        parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [
             [{ text: '🎬 Смотреть запись', url: recordingLink }],
@@ -346,10 +333,14 @@ ${notes ? `📝 *Дополнительные рекомендации*:\n${note
     return true;
   } catch (error) {
     console.error(`Ошибка при отправке записи консультации: ${error.message}`);
-    await bot.telegram.sendMessage(
-      ADMIN_ID,
-      `❌ Ошибка при отправке записи консультации: ${error.message}`
-    );
+    try {
+      await bot.telegram.sendMessage(
+        ADMIN_ID,
+        `❌ Ошибка при отправке записи консультации: ${error.message}`
+      );
+    } catch (notifyError) {
+      console.error(`Не удалось уведомить админа: ${notifyError.message}`);
+    }
     return false;
   }
 }
