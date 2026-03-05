@@ -1,7 +1,7 @@
 // Файл: index.js
 // Основной файл Telegram-бота с поддержкой вебхуков
 
-// Импортируем общую конфигурацию (БЕЗ setupWebhook!)
+// Импортируем общую конфигурацию
 const { 
   app, 
   bot, 
@@ -184,32 +184,5 @@ bot.action(/confirm_payment_(.+)/, async (ctx) => {
 // Загружаем остальные обработчики из отдельного файла
 require('./bot_handlers');
 
-// АВТОУСТАНОВКА ВЕБХУКА ПРИ ЗАПУСКЕ
-// Запускается асинхронно после загрузки всех обработчиков
-(async () => {
-  try {
-    const BOT_TOKEN = process.env.BOT_TOKEN;
-    const webhookUrl = `${APP_URL}/telegraf/${BOT_TOKEN}`;
-    
-    // Проверяем текущий вебхук
-    const webhookInfo = await bot.telegram.getWebhookInfo();
-    
-    // Если вебхук не установлен или URL не совпадает
-    if (!webhookInfo.url || webhookInfo.url !== webhookUrl) {
-      logWithTime(`🔄 Вебхук не установлен или некорректный. Устанавливаю...`);
-      logWithTime(`Текущий URL: "${webhookInfo.url}"`);
-      logWithTime(`Ожидаемый URL: "${webhookUrl}"`);
-      
-      await bot.telegram.setWebhook(webhookUrl, {
-        drop_pending_updates: true
-      });
-      
-      logWithTime('✅ Вебхук успешно установлен автоматически!');
-    } else {
-      logWithTime(`✅ Вебхук уже установлен: ${webhookInfo.url}`);
-    }
-  } catch (error) {
-    console.error(`❌ Ошибка при автоустановке вебхука: ${error.message}`);
-    logWithTime(`💡 Установите вручную: https://api.telegram.org/bot${process.env.BOT_TOKEN}/setWebhook?url=${APP_URL}/telegraf/${process.env.BOT_TOKEN}`);
-  }
-})();
+// ПРИМЕЧАНИЕ: Вебхук устанавливается автоматически через bot.launch() в bot_handlers.js
+// Как в breathing-lead-bot - Telegraf сам управляет вебхуком
