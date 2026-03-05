@@ -134,6 +134,32 @@ async function handleBuyAction(ctx) {
 
     logWithTime(`[BUY] Найден продукт: ${product.name}`);
     
+    // ПРОВЕРКА: Есть ли у клиента незавершённый заказ?
+    const { pendingOrders } = global.botData;
+    const existingOrder = pendingOrders[userId];
+    
+    if (existingOrder && existingOrder.status === 'waiting_payment') {
+      const existingProduct = products[existingOrder.productId];
+      
+      logWithTime(`[BUY] У пользователя ${userId} уже есть незавершённый заказ на "${existingProduct.name}"`);
+      
+      // Предлагаем отменить старый заказ и создать новый
+      await ctx.reply(
+        `⚠️ У вас уже есть незавершённый заказ:\n\n📦 ${existingProduct.name}\n💰 ${existingProduct.price}\n\nХотите отменить его и создать новый заказ на "${product.name}"?`,
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '✅ Да, создать новый заказ', callback_data: `replace_order_${productId}` }],
+              [{ text: '❌ Нет, оставить текущий', callback_data: 'show_products' }]
+            ]
+          }
+        }
+      );
+      
+      await ctx.answerCbQuery('⚠️ У вас есть незавершённый заказ');
+      return;
+    }
+    
     try {
       // Пытаемся отправить логотип с названием продукта
       await ctx.replyWithPhoto(
