@@ -82,15 +82,35 @@ function setupCommandHandlers(bot, handleStart) {
       // Сначала отправляем логотип с подписью
       await ctx.replyWithPhoto(
         { source: 'files/logo.jpg' },
-        { caption: '🌬️ Дыхательная гимнастика по методу Бутейко с Александром Поповым - Информация о курсах' }
+        { caption: '🌬️ Метод Бутейко - научно обоснованная дыхательная гимнастика' }
       );
       
       // Небольшая задержка для лучшего UX
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Отправляем основной текст
+      // Отправляем основной текст с научной информацией
       await ctx.reply(
-        `ℹ️ *О курсах дыхательной гимнастики*\\n\\nПривет, ${userName}!\\n\\n*Александр Попов* - инструктор по дыхательной гимнастике метода Бутейко.\\n\\nНаши курсы помогут вам:\\n\\n• Повысить жизненную энергию\\n• Снизить уровень стресса\\n• Улучшить качество сна\\n• Повысить иммунитет\\n• Улучшить работу дыхательной системы\\n\\nВыберите /buy в меню, чтобы ознакомиться с доступными программами.\\n\\n📞 Связаться с преподавателем: @AS_Popov87`,
+        `Привет, ${userName}!\n\n` +
+        `🧬 МЕТОД БУТЕЙКО\n\n` +
+        `Константин Павлович Бутейко — первый врач-физиолог, который доказал связь между неправильным дыханием и развитием более 150 заболеваний.\n\n` +
+        `✅ Что происходит при правильном дыхании:\n` +
+        `• Нормализуется уровень CO₂ в крови\n` +
+        `• Расширяются сосуды и бронхи\n` +
+        `• Улучшается кислородное питание тканей\n` +
+        `• Снижается спазм гладкой мускулатуры\n\n` +
+        `📊 Доказанная эффективность:\n` +
+        `Метод признан Минздравом РФ и применяется в клинической практике с 1985 года.\n\n` +
+        `🌟 Результаты зависят от вашей цели:\n` +
+        `• Снять стресс и напряжение — несколько минут практики\n` +
+        `• Улучшить сон и самочувствие — регулярная практика\n` +
+        `• Серьёзные изменения в здоровье — требуют времени и системного подхода\n\n` +
+        `💪 Преимущества метода:\n` +
+        `• Естественный подход без лекарств\n` +
+        `• Безопасен при правильном освоении\n` +
+        `• Навык остаётся с вами на всю жизнь\n` +
+        `• Можно практиковать в любом месте\n\n` +
+        `Выберите /buy в меню, чтобы ознакомиться с доступными программами.\n\n` +
+        `📞 Связаться с преподавателем: [Александр Попов](https://t.me/AS_Popov87)`,
         { 
           parse_mode: 'Markdown',
           reply_markup: {
@@ -124,26 +144,26 @@ function setupCommandHandlers(bot, handleStart) {
       
       // Если есть заказы, показываем их
       const orders = completedOrders[userId];
-      let message = '*Ваши покупки:*\\n\\n';
+      let message = '*Ваши покупки:*\n\n';
       
       orders.forEach((order, index) => {
         const product = products[order.productId];
         const orderDate = new Date(order.completedAt).toLocaleDateString();
         const orderNumber = order.orderId || `#${Date.now().toString().slice(-6)}`;
         
-        message += `*${index + 1}. ${product.name}*\\n`;
-        message += `🆔 Заказ: ${orderNumber}\\n`;
-        message += `📅 Дата: ${orderDate}\\n`;
-        message += `💳 Цена: ${product.price}\\n`;
+        message += `*${index + 1}. ${product.name}*\n`;
+        message += `🆔 Заказ: ${orderNumber}\n`;
+        message += `📅 Дата: ${orderDate}\n`;
+        message += `💳 Цена: ${product.price}\n`;
         
         if (order.recordingSent) {
-          message += `🎬 Запись консультации: ✅\\n`;
+          message += `🎬 Запись консультации: ✅\n`;
         }
         
-        message += '\\n';
+        message += '\n';
       });
       
-      message += '\\nДля повторного доступа к материалам напишите в чат администратору @AS_Popov87';
+      message += '\nДля повторного доступа к материалам напишите [Александру](https://t.me/AS_Popov87)';
       
       await ctx.reply(
         message, 
@@ -199,28 +219,28 @@ function setupCommandHandlers(bot, handleStart) {
       }
       
       // Если есть консультации, показываем их
-      let message = '*Ваши консультации:*\\n\\n';
+      let message = '*Ваши консультации:*\n\n';
       
       consultations.forEach((consultation, index) => {
         const product = products[consultation.productId];
         const orderDate = new Date(consultation.completedAt).toLocaleDateString();
         const orderNumber = consultation.orderId || `#${Date.now().toString().slice(-6)}`;
         
-        message += `*${index + 1}. ${product.name}*\\n`;
-        message += `🆔 Заказ: ${orderNumber}\\n`;
-        message += `📅 Дата: ${orderDate}\\n`;
+        message += `*${index + 1}. ${product.name}*\n`;
+        message += `🆔 Заказ: ${orderNumber}\n`;
+        message += `📅 Дата: ${orderDate}\n`;
         
         if (consultation.recordingSent) {
-          message += `🎬 Запись: ✅ [Доступна]\\n`;
-          message += `🔗 Ссылка: ${consultation.recordingLink || 'Свяжитесь с преподавателем'}\\n`;
+          message += `🎬 Запись: ✅ [Доступна]\n`;
+          message += `🔗 Ссылка: ${consultation.recordingLink || 'Свяжитесь с преподавателем'}\n`;
         } else {
-          message += `🎬 Запись: ⏳ [Ожидает отправки]\\n`;
+          message += `🎬 Запись: ⏳ [Ожидает отправки]\n`;
         }
         
-        message += '\\n';
+        message += '\n';
       });
       
-      message += 'Для получения записи консультации или дополнительной информации, пожалуйста, свяжитесь с преподавателем @AS_Popov87';
+      message += 'Для получения записи консультации или дополнительной информации свяжитесь с [Александром](https://t.me/AS_Popov87)';
       
       await ctx.reply(
         message, 
@@ -244,7 +264,7 @@ function setupCommandHandlers(bot, handleStart) {
       const userName = getUserName(ctx.from);
       
       await ctx.reply(
-        `📱 *Связаться с преподавателем*\\n\\nПривет, ${userName}!\\n\\nВы можете написать Александру напрямую по любым вопросам:`,
+        `📱 *Связаться с преподавателем*\n\nПривет, ${userName}!\n\nВы можете написать Александру напрямую по любым вопросам:`,
         {
           parse_mode: 'Markdown',
           reply_markup: {
@@ -269,15 +289,15 @@ function setupCommandHandlers(bot, handleStart) {
       const userName = getUserName(ctx.from);
       
       await ctx.reply(
-        `🌬️ *Дыхательная гимнастика по методу Бутейко с Александром Поповым*\\n\\nПривет, ${userName}!\\n\\nДоступные команды:\\n\\n` +
-        '• /start - Начать работу с ботом\\n' +
-        '• /buy - Купить курс или консультацию\\n' +
-        '• /info - Информация о курсах\\n' +
-        '• /purchases - Мои покупки\\n' +
-        '• /consultations - Мои консультации\\n' +
-        '• /contact - Связаться с преподавателем\\n' +
-        '• /help - Получить эту справку\\n\\n' +
-        'Если у вас возникли вопросы, вы всегда можете связаться с Александром напрямую: @AS_Popov87',
+        `🌬️ *Дыхательная гимнастика по методу Бутейко с Александром Поповым*\n\nПривет, ${userName}!\n\nДоступные команды:\n\n` +
+        '• /start - Начать работу с ботом\n' +
+        '• /buy - Купить курс или консультацию\n' +
+        '• /info - Информация о курсах\n' +
+        '• /purchases - Мои покупки\n' +
+        '• /consultations - Мои консультации\n' +
+        '• /contact - Связаться с преподавателем\n' +
+        '• /help - Получить эту справку\n\n' +
+        'Если у вас возникли вопросы, вы всегда можете связаться с [Александром](https://t.me/AS_Popov87)',
         { 
           parse_mode: 'Markdown',
           reply_markup: {
