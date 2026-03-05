@@ -167,11 +167,31 @@ bot.action(/confirm_payment_(.+)/, async (ctx) => {
     // Вызываем функцию подтверждения оплаты
     await confirmPayment(clientId);
     
-    // Редактируем сообщение админа - убираем кнопки
+    // Проверяем, является ли это консультацией
+    const order = pendingOrders[clientId] || completedOrders[clientId]?.[completedOrders[clientId].length - 1];
+    const isConsultation = order && (order.productId === 'individual' || order.productId === 'package');
+    
+    // Заменяем кнопки на новые (НЕ УДАЛЯЕМ!)
     try {
-      await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+      if (isConsultation) {
+        // Для консультаций - кнопки для отправки записи
+        await ctx.editMessageReplyMarkup({
+          inline_keyboard: [
+            [{ text: '🎬 Отправить запись консультации', callback_data: `send_recording_${clientId}` }],
+            [{ text: '✅ Работа завершена, ожидается отзыв', callback_data: `work_completed_${clientId}` }],
+            [{ text: '💬 Открыть чат с клиентом', url: `tg://user?id=${clientId}` }]
+          ]
+        });
+      } else {
+        // Для других продуктов - просто кнопка "Завершено"
+        await ctx.editMessageReplyMarkup({
+          inline_keyboard: [
+            [{ text: '✅ Заказ завершён', callback_data: `order_completed_${clientId}` }]
+          ]
+        });
+      }
     } catch (editError) {
-      logWithTime(`[АДМИН] Не удалось убрать кнопки: ${editError.message}`);
+      logWithTime(`[АДМИН] Не удалось заменить кнопки: ${editError.message}`);
     }
     
     logWithTime(`[АДМИН] Оплата успешно подтверждена для клиента ${clientId}`);
@@ -181,8 +201,61 @@ bot.action(/confirm_payment_(.+)/, async (ctx) => {
   }
 });
 
+// ОБРАБОТЧИК КНОПКИ "РАБОТА ЗАВЕРШЕНА"
+bot.action(/work_completed_(.+)/, async (ctx) => {
+  const clientId = parseInt(ctx.match[1]);
+  const adminId = ctx.from.id;
+  
+  try {
+    if (adminId.toString() !== ADMIN_ID) {
+      await ctx.answerCbQuery('❌ У вас нет прав для этого действия');
+      return;
+    }
+    
+    // Убираем все кнопки
+    await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+    await ctx.answerCbQuery('✅ Работа с клиентом завершена');
+    
+    logWithTime(`[АДМИН] Работа завершена для клиента ${clientId}`);
+  } catch (error) {
+    console.error(`[АДМИН] Ошибка: ${error.message}`);
+    await ctx.answerCbQuery('Произошла ошибка');
+  }
+});
+
+// ОБРАБОТЧИК КНОПКИ "ОТПРАВИТЬ ЗАПИСЬ" (подготовка - админ введёт ссылку)
+bot.action(/send_recording_(.+)/, async (ctx) => {
+  const clientId = parseInt(ctx.match[1]);
+  const adminId = ctx.from.id;
+  
+  try {
+    if (adminId.toString() !== ADMIN_ID) {
+      await ctx.answerCbQuery('❌ У вас нет прав для этого действия');
+      return;
+    }
+    
+    // Сохраняем состояние админа - ожидаем ссылку
+    global.botData.adminState = {
+      action: 'waiting_recording_link',
+      clientId: clientId,
+      timestamp: new Date().toISOString()
+    };
+    
+    await ctx.reply(
+      `🎬 Отправьте ссылку на запись консультации для клиента (ID: ${clientId})\n\nФормат: просто отправьте ссылку на видео (например, YouTube, Yandex.Disk и т.д.)`,
+      { parse_mode: 'Markdown' }
+    );
+    
+    await ctx.answerCbQuery('⌨️ Отправьте ссылку в чат...');
+    logWithTime(`[АДМИН] Ожидается ссылка на запись для клиента ${clientId}`);
+  } catch (error) {
+    console.error(`[АДМИН] Ошибка: ${error.message}`);
+    await ctx.answerCbQuery('Произошла ошибка');
+  }
+});
+
 // Загружаем остальные обработчики из отдельного файла
 require('./bot_handlers');
 
-// ПРИМЕЧАНИЕ: Вебхук устанавливается автоматически через bot.launch() в bot_handlers.js
-// Как в breathing-lead-bot - Telegraf сам управляет вебхуком
+// ПРИМЕЧАНИЕ: Вебхук устанавливается автоматически через webhook callback в config.js
+// Telegraf сам управляет вебхуком
