@@ -32,19 +32,15 @@ const DISABLE_RESTART_NOTIFICATIONS = process.env.DISABLE_RESTART_NOTIFICATIONS 
 // Обновленный обработчик для информационного раздела
 bot.action('show_info', async (ctx) => {
   try {
-    // Используем функцию getUserName для получения имени пользователя
     const userName = getUserName(ctx.from);
 
-    // Сначала отправляем логотип с подписью
     await ctx.replyWithPhoto(
       { source: 'files/logo.jpg' },
       { caption: '🌬️ Дыхательная гимнастика по методу Бутейко с Александром Поповым' }
     );
 
-    // Небольшая задержка для лучшего UX
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Отправляем основной текст (БЕЗ MARKDOWN для безопасности)
     await ctx.reply(
       `ℹ️ Дыхательная гимнастика по методу Бутейко с Александром Поповым\n\nПривет, ${userName}!\n\nАлександр Попов - сертифицированный инструктор по дыхательной гимнастике Бутейко.\n\nНаши курсы помогут вам:\n\n• Повысить жизненную энергию\n• Снизить уровень стресса\n• Улучшить качество сна\n• Повысить иммунитет\n• Улучшить работу дыхательной системы\n\nВыберите 🛍️ Купить курс в меню, чтобы ознакомиться с доступными программами.\n\n📞 Связаться с преподавателем: @AS_Popov87`,
       { 
@@ -69,7 +65,6 @@ bot.action('show_purchases', async (ctx) => {
     const userId = ctx.from.id;
     const { completedOrders } = global.botData;
 
-    // Проверяем, есть ли у пользователя завершенные заказы
     if (!completedOrders[userId] || completedOrders[userId].length === 0) {
       await ctx.reply(
         messageTemplates.noPurchases,
@@ -79,7 +74,6 @@ bot.action('show_purchases', async (ctx) => {
       return;
     }
 
-    // Если есть заказы, показываем их
     const orders = completedOrders[userId];
     let message = 'Ваши покупки:\n\n';
 
@@ -123,7 +117,6 @@ bot.action('show_consultations', async (ctx) => {
     const userId = ctx.from.id;
     const { completedOrders } = global.botData;
 
-    // Проверяем, есть ли у пользователя консультации
     if (!completedOrders[userId] || completedOrders[userId].length === 0) {
       await ctx.reply(
         'У вас пока нет консультаций. Выберите 🛍️ Купить курс, чтобы приобрести индивидуальную консультацию.',
@@ -138,7 +131,6 @@ bot.action('show_consultations', async (ctx) => {
       return;
     }
 
-    // Фильтруем только консультации
     const consultations = completedOrders[userId].filter(
       order => order.productId === 'individual' || order.productId === 'package'
     );
@@ -157,7 +149,6 @@ bot.action('show_consultations', async (ctx) => {
       return;
     }
 
-    // Если есть консультации, показываем их (БЕЗ MARKDOWN!)
     let message = 'Ваши консультации:\n\n';
 
     consultations.forEach((consultation, index) => {
@@ -199,7 +190,6 @@ bot.action('show_consultations', async (ctx) => {
 // Обработчик для обновления списка консультаций
 bot.action('refresh_consultations', async (ctx) => {
   try {
-    // Повторно используем обработчик show_consultations
     await bot.handleUpdate({
       ...ctx.update,
       callback_query: {
@@ -216,7 +206,6 @@ bot.action('refresh_consultations', async (ctx) => {
 // Обработчик для возврата в главное меню
 bot.action('back_to_menu', async (ctx) => {
   try {
-    // Получаем имя пользователя
     const userName = getUserName(ctx.from);
 
     await ctx.editMessageText(
@@ -231,14 +220,11 @@ bot.action('back_to_menu', async (ctx) => {
 });
 
 // Настройка маршрутов Express
-
-// Главная страница с расширенной информацией для Railway
 app.get('/', (req, res) => {
   const uptime = Math.floor((new Date() - startTime) / 1000);
   const uptimeFormatted = formatUptime(uptime);
   const memoryUsage = process.memoryUsage();
 
-  // Получаем статистику пинга, если доступна
   let pingStats = { status: 'not available' };
   try {
     if (global.botData.pingManager) {
@@ -298,7 +284,6 @@ app.get('/', (req, res) => {
   logWithTime(`Запрос к главной странице (uptime: ${uptimeFormatted})`);
 });
 
-// Маршрут для проверки здоровья (важно для Railway)
 app.get('/ping', (req, res) => {
   try {
     res.status(200).set('Content-Type', 'text/plain').send('pong');
@@ -309,7 +294,6 @@ app.get('/ping', (req, res) => {
   }
 });
 
-// Расширенный маршрут для статуса с дополнительной информацией для Railway
 app.get('/status', (req, res) => {
   try {
     const uptimeSeconds = Math.floor((new Date() - startTime) / 1000);
@@ -382,11 +366,11 @@ async function startApp() {
       logWithTime(`Express сервер запущен на порту ${PORT} и адресе 0.0.0.0`);
     });
 
-    // ВАЖНО: ЗАПУСКАЕМ БОТА В WEBHOOK MODE (НЕ POLLING!)
+    // ПРОСТО КАК В BREATHING-LEAD-BOT - bot.launch() без параметров!
+    // Telegraf сам определит режим (webhook vs polling)
     try {
-      // НЕ ВЫЗЫВАЕМ bot.launch() - вместо этого просто логируем
-      // Telegraf уже настроен на webhook через bot.webhookCallback() в config.js
-      logWithTime('🚀 Бот работает в режиме webhook (обработчик уже настроен в config.js)');
+      await bot.launch();
+      logWithTime('🚀 Бот успешно запущен через bot.launch() (как в breathing-lead-bot)');
     } catch (launchError) {
       console.error('❌ Ошибка при запуске бота:', launchError.message);
       throw launchError;
@@ -427,14 +411,12 @@ async function startApp() {
   }
 }
 
-// ВАЖНО: НЕ УДАЛЯЕМ ВЕБХУК ПРИ ОСТАНОВКЕ!
-// Вебхук должен сохраняться между рестартами
 process.once('SIGINT', () => {
   logWithTime('Получен сигнал SIGINT, останавливаем бота...');
   const memoryInfo = `Память при остановке: ${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB`;
   logWithTime(memoryInfo);
   bot.stop('SIGINT');
-  logWithTime('Бот остановлен по SIGINT (вебхук сохранён)');
+  logWithTime('Бот остановлен по SIGINT');
 });
 
 process.once('SIGTERM', () => {
@@ -442,7 +424,7 @@ process.once('SIGTERM', () => {
   const memoryInfo = `Память при остановке: ${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB`;
   logWithTime(memoryInfo);
   bot.stop('SIGTERM');
-  logWithTime('Бот остановлен по SIGTERM (вебхук сохранён)');
+  logWithTime('Бот остановлен по SIGTERM');
 });
 
 // Запускаем приложение
