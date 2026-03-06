@@ -4,12 +4,53 @@
 const { products, messageTemplates } = require('./data');
 const { mainKeyboard, fileExists, logWithTime } = require('./utils');
 
+// 🆕 ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ: Получить эмодзи для источника
+function getSourceEmoji(source) {
+  const emojiMap = {
+    'website': '🌐',
+    'website_hero': '🌐',
+    'website_cta': '🌐',
+    'website_footer': '🌐',
+    'telegram_channel': '💬',
+    'telegram_group': '💬',
+    'instagram': '📸',
+    'vk': '🔵',
+    'youtube': '📺',
+    'direct': '👤',
+    'unknown': '❓'
+  };
+  return emojiMap[source] || '❓';
+}
+
+// 🆕 ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ: Форматировать название источника
+function formatSource(source) {
+  const sourceNames = {
+    'website': 'Сайт',
+    'website_hero': 'Сайт (главный экран)',
+    'website_cta': 'Сайт (призыв к действию)',
+    'website_footer': 'Сайт (подвал)',
+    'telegram_channel': 'Telegram канал @spokoinoe_dyhanie',
+    'telegram_group': 'Telegram группа',
+    'instagram': 'Instagram',
+    'vk': 'ВКонтакте',
+    'youtube': 'YouTube',
+    'direct': 'Прямая ссылка',
+    'unknown': 'Неизвестно'
+  };
+  return sourceNames[source] || source;
+}
+
 // Отправка уведомления администратору о новом заказе
 async function notifyAdmin(userId) {
   try {
-    const { bot, ADMIN_ID, pendingOrders } = global.botData;
+    const { bot, ADMIN_ID, pendingOrders, userSources } = global.botData;
     const order = pendingOrders[userId];
     const product = products[order.productId];
+    
+    // 🆕 ПОЛУЧАЕМ ИСТОЧНИК КЛИЕНТА
+    const source = userSources[userId] || 'unknown';
+    const sourceEmoji = getSourceEmoji(source);
+    const sourceFormatted = formatSource(source);
     
     // Более безопасное получение информации о пользователе
     let userInfo = { first_name: 'Пользователь', last_name: '' };
@@ -19,7 +60,7 @@ async function notifyAdmin(userId) {
       console.error(`Не удалось получить информацию о пользователе ${userId}: ${error.message}`);
     }
     
-    // Формируем сообщение для админа
+    // Формируем сообщение для админа С ИСТОЧНИКОМ
     const message = `
 🔔 *НОВЫЙ ЗАКАЗ*
   
@@ -30,6 +71,7 @@ async function notifyAdmin(userId) {
 🆔 ID: \`${userId}\`
 📧 Email: ${order.email}
 📱 Телефон: ${order.phone}
+${sourceEmoji} Источник: ${sourceFormatted}
 🕒 Время заказа: ${new Date().toLocaleString()}
   
 Для подтверждения оплаты используйте команду:
@@ -56,7 +98,7 @@ async function notifyAdmin(userId) {
       }
     });
     
-    logWithTime(`Отправлено уведомление администратору о заказе пользователя ${userId}`);
+    logWithTime(`Отправлено уведомление администратору о заказе пользователя ${userId} из источника: ${source}`);
   } catch (error) {
     console.error(`Ошибка при отправке уведомления администратору: ${error.message}`);
   }
