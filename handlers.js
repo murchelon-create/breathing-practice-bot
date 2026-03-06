@@ -16,6 +16,18 @@ async function handleStart(ctx) {
     // Используем функцию getUserName для получения имени пользователя
     const firstName = getUserName(ctx.from);
     
+    // 🆕 ПОЛУЧАЕМ ИСТОЧНИК ИЗ ПАРАМЕТРА START
+    const source = ctx.startPayload || 'unknown';
+    
+    // 🆕 СОХРАНЯЕМ ИСТОЧНИК (только если ещё не сохранён)
+    const { userSources } = global.botData;
+    if (!userSources[userId]) {
+      userSources[userId] = source;
+      logWithTime(`[START] Новый пользователь ${userId} (${firstName}) из источника: ${source}`);
+    } else {
+      logWithTime(`[START] Пользователь ${userId} (${firstName}) вернулся, источник: ${userSources[userId]}`);
+    }
+    
     // Добавляем дебаунсинг для предотвращения множественных вызовов
     const currentTime = Date.now();
     if (userLastCommand.has(userId)) {
