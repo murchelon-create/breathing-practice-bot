@@ -29,6 +29,77 @@ const RAILWAY_OPTIMIZED_MODE = true;
 // Флаг для отключения стартовых уведомлений
 const DISABLE_RESTART_NOTIFICATIONS = process.env.DISABLE_RESTART_NOTIFICATIONS === 'true' || false;
 
+// 🆕 КОМАНДА /stats ДЛЯ СТАТИСТИКИ ИСТОЧНИКОВ
+bot.command('stats', async (ctx) => {
+  try {
+    const adminId = ctx.from.id;
+    
+    // Проверяем, что это админ
+    if (adminId.toString() !== ADMIN_ID) {
+      await ctx.reply('❌ Эта команда доступна только администратору.');
+      return;
+    }
+    
+    const { userSources } = global.botData;
+    
+    // Подсчитываем статистику
+    const stats = {};
+    Object.values(userSources).forEach(source => {
+      stats[source] = (stats[source] || 0) + 1;
+    });
+    
+    // Сортируем по количеству (по убыванию)
+    const sortedStats = Object.entries(stats).sort((a, b) => b[1] - a[1]);
+    
+    // Используем функции из admin.js (через require)
+    const adminModule = require('./admin');
+    // Нужно экспортировать эти функции, но т.к. они внутри admin.js, дублируем здесь
+    function getSourceEmoji(source) {
+      const emojiMap = {
+        'website': '🌐', 'website_hero': '🌐', 'website_cta': '🌐', 'website_footer': '🌐',
+        'telegram_channel': '💬', 'telegram_group': '💬',
+        'instagram': '📸', 'vk': '🔵', 'youtube': '📺',
+        'direct': '👤', 'unknown': '❓'
+      };
+      return emojiMap[source] || '❓';
+    }
+    
+    function formatSource(source) {
+      const sourceNames = {
+        'website': 'Сайт', 'website_hero': 'Сайт (главный экран)',
+        'website_cta': 'Сайт (призыв к действию)', 'website_footer': 'Сайт (подвал)',
+        'telegram_channel': 'Telegram канал @spokoinoe_dyhanie', 'telegram_group': 'Telegram группа',
+        'instagram': 'Instagram', 'vk': 'ВКонтакте', 'youtube': 'YouTube',
+        'direct': 'Прямая ссылка', 'unknown': 'Неизвестно'
+      };
+      return sourceNames[source] || source;
+    }
+    
+    // Формируем сообщение
+    let message = '📊 *Статистика по источникам:*\n\n';
+    
+    if (sortedStats.length === 0) {
+      message += 'ℹ️ Пока нет данных об источниках.\n\n';
+      message += 'Используйте ссылки с метками из файла SOURCES.md';
+    } else {
+      sortedStats.forEach(([source, count]) => {
+        const emoji = getSourceEmoji(source);
+        const formattedSource = formatSource(source);
+        message += `${emoji} ${formattedSource}: *${count}*\n`;
+      });
+      
+      const totalUsers = Object.keys(userSources).length;
+      message += `\n👥 Всего пользователей: *${totalUsers}*`;
+    }
+    
+    await ctx.reply(message, { parse_mode: 'Markdown' });
+    logWithTime(`Админ ${adminId} запросил статистику по источникам`);
+  } catch (error) {
+    console.error(`Ошибка в /stats: ${error.message}`);
+    await ctx.reply('❌ Произошла ошибка при получении статистики.');
+  }
+});
+
 // Обновленный обработчик для информационного раздела
 bot.action('show_info', async (ctx) => {
   try {
