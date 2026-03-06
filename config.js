@@ -53,12 +53,16 @@ const startTime = new Date();
 const pendingOrders = {};
 const completedOrders = {};
 
+// Хранение источников пользователей (откуда пришли клиенты)
+const userSources = {}; // Структура: { userId: 'website' | 'telegram_channel' | ... }
+
 // Создаем глобальный объект для хранения данных бота
 global.botData = {
   bot,
   ADMIN_ID,
   pendingOrders,
   completedOrders,
+  userSources, // Добавляем источники в глобальное хранилище
   adminState: null, // Для хранения состояния админа
   startTime: startTime, // Запоминаем время запуска
   lastPingTime: new Date()
@@ -104,6 +108,7 @@ module.exports = {
   WEBHOOK_MODE,
   pendingOrders,
   completedOrders,
+  userSources, // Экспортируем источники
   startTime,
   logWithTime,
   formatUptime
