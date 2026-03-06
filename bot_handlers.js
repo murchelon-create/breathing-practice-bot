@@ -51,9 +51,7 @@ bot.command('stats', async (ctx) => {
     // Сортируем по количеству (по убыванию)
     const sortedStats = Object.entries(stats).sort((a, b) => b[1] - a[1]);
     
-    // Используем функции из admin.js (через require)
-    const adminModule = require('./admin');
-    // Нужно экспортировать эти функции, но т.к. они внутри admin.js, дублируем здесь
+    // 🎯 ОБНОВЛЁННЫЕ ФУНКЦИИ ДЛЯ КОМБИНИРОВАННЫХ МЕТОК
     function getSourceEmoji(source) {
       const emojiMap = {
         'website': '🌐', 'website_hero': '🌐', 'website_cta': '🌐', 'website_footer': '🌐',
@@ -61,6 +59,12 @@ bot.command('stats', async (ctx) => {
         'instagram': '📸', 'vk': '🔵', 'youtube': '📺',
         'direct': '👤', 'unknown': '❓'
       };
+      
+      // Для комбинированных меток типа website_cta_*
+      if (source.startsWith('website_cta_')) {
+        return '🌐';
+      }
+      
       return emojiMap[source] || '❓';
     }
     
@@ -72,6 +76,19 @@ bot.command('stats', async (ctx) => {
         'instagram': 'Instagram', 'vk': 'ВКонтакте', 'youtube': 'YouTube',
         'direct': 'Прямая ссылка', 'unknown': 'Неизвестно'
       };
+      
+      // 🎯 ПОДДЕРЖКА КОМБИНИРОВАННЫХ МЕТОК website_cta_*
+      if (source.startsWith('website_cta_')) {
+        const product = source.replace('website_cta_', '');
+        const productNames = {
+          'starter': 'Стартовый',
+          'consultation': 'Консультация',
+          'package5': 'Пакет 5'
+        };
+        const productName = productNames[product] || product;
+        return `Сайт (CTA) → ${productName}`;
+      }
+      
       return sourceNames[source] || source;
     }
     
