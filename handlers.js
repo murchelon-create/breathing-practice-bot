@@ -17,13 +17,31 @@ async function handleStart(ctx) {
     const firstName = getUserName(ctx.from);
     
     // 🆕 ПОЛУЧАЕМ ИСТОЧНИК ИЗ ПАРАМЕТРА START
-    const source = ctx.startPayload || 'unknown';
+    const rawSource = ctx.startPayload || 'unknown';
+    
+    // 🎯 ПАРСИМ КОМБИНИРОВАННЫЕ МЕТКИ (website_cta_starter → website_cta + starter)
+    let source = rawSource;
+    let selectedProduct = null;
+    
+    // Проверяем, есть ли в метке информация о продукте
+    if (rawSource.startsWith('website_cta_')) {
+      // Извлекаем название продукта после website_cta_
+      selectedProduct = rawSource.replace('website_cta_', '');
+      source = rawSource; // Сохраняем полную метку для статистики
+      
+      logWithTime(`[START] Распознана комбинированная метка: источник=website_cta, продукт=${selectedProduct}`);
+    }
     
     // 🆕 СОХРАНЯЕМ ИСТОЧНИК (только если ещё не сохранён)
     const { userSources } = global.botData;
     if (!userSources[userId]) {
       userSources[userId] = source;
-      logWithTime(`[START] Новый пользователь ${userId} (${firstName}) из источника: ${source}`);
+      
+      if (selectedProduct) {
+        logWithTime(`[START] ✨ Новый пользователь ${userId} (${firstName}) из источника: website_cta, выбрал продукт: ${selectedProduct}`);
+      } else {
+        logWithTime(`[START] Новый пользователь ${userId} (${firstName}) из источника: ${source}`);
+      }
     } else {
       logWithTime(`[START] Пользователь ${userId} (${firstName}) вернулся, источник: ${userSources[userId]}`);
     }
@@ -98,13 +116,24 @@ async function handleStart(ctx) {
     const { bot, ADMIN_ID } = global.botData;
     
     if (userId !== parseInt(ADMIN_ID)) {
+      // Формируем сообщение администратору
+      let adminMessage = `🆕 Новый пользователь:\n- Имя: ${firstName} ${ctx.from.last_name || ''}\n- Username: @${ctx.from.username || 'отсутствует'}\n- ID: ${userId}`;
+      
+      // 🎯 Добавляем информацию о выбранном продукте если есть
+      if (selectedProduct) {
+        const productNames = {
+          starter: 'Стартовый комплект',
+          consultation: 'Разовая консультация',
+          package5: 'Пакет 5 занятий'
+        };
+        const productName = productNames[selectedProduct] || selectedProduct;
+        adminMessage += `\n- Выбран продукт: ${productName} 🎯`;
+      }
+      
       // Отправляем уведомление админу асинхронно
-      bot.telegram.sendMessage(
-        ADMIN_ID,
-        `🆕 Новый пользователь:\n- Имя: ${firstName} ${ctx.from.last_name || ''}\n- Username: @${ctx.from.username || 'отсутствует'}\n- ID: ${userId}`
-      )
-      .then(() => logWithTime(`[START] Администратор уведомлен о новом пользователе ${userId}`))
-      .catch(e => console.error(`[ERROR] Ошибка при уведомлении админа: ${e.message}, stack: ${e.stack}`));
+      bot.telegram.sendMessage(ADMIN_ID, adminMessage)
+        .then(() => logWithTime(`[START] Администратор уведомлен о новом пользователе ${userId}`))
+        .catch(e => console.error(`[ERROR] Ошибка при уведомлении админа: ${e.message}, stack: ${e.stack}`));
     }
     
     logWithTime(`[START] Команда start успешно обработана для пользователя ${userId}, ${ctx.from.username || 'без username'}`);
@@ -233,7 +262,7 @@ async function handleBuyAction(ctx) {
 // Обработчик подтверждения начала покупки (устаревший, сохранен для совместимости)
 async function handleConfirmBuy(ctx) {
   try {
-    console.log('[CONFIRM_BUY] ====== НАЧАЛО ОБРАБОТКИ ПОДТВЕРЖДЕНИЯ ПОКУПКИ ======');
+    console.log('[CONFIRM_BUY] ====== НАЧАЛО ОБРАБОТКИ ПОДТВЕРЖДЕНИЯ ПОКУПКИ ======')
     
     const productId = ctx.match[1];
     const userId = ctx.from.id;
@@ -279,7 +308,7 @@ async function handleConfirmBuy(ctx) {
     await ctx.answerCbQuery('✅ Начинаем оформление заказа');
     
     logWithTime(`[CONFIRM_BUY] Пользователь ${userId} успешно начал оформление заказа: ${product.name}`);
-    console.log('[CONFIRM_BUY] ====== КОНЕЦ ОБРАБОТКИ ПОДТВЕРЖДЕНИЯ ПОКУПКИ ======');
+    console.log('[CONFIRM_BUY] ====== КОНЕЦ ОБРАБОТКИ ПОДТВЕРЖДЕНИЯ ПОКУПКИ ======')
   } catch (error) {
     console.error(`[ERROR] Ошибка при подтверждении покупки: ${error.message}`);
     console.error(`[ERROR] Stack trace: ${error.stack}`);
