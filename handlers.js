@@ -19,17 +19,19 @@ async function handleStart(ctx) {
     // 🆕 ПОЛУЧАЕМ ИСТОЧНИК ИЗ ПАРАМЕТРА START
     const rawSource = ctx.startPayload || 'unknown';
     
-    // 🎯 ПАРСИМ КОМБИНИРОВАННЫЕ МЕТКИ (website-cta-starter → website-cta + starter)
+    // 🎯 ПАРСИМ КОМБИНИРОВАННЫЕ МЕТКИ (websiteCtaStarter → websiteCta + Starter)
     let source = rawSource;
     let selectedProduct = null;
     
     // Проверяем, есть ли в метке информация о продукте
-    if (rawSource.startsWith('website-cta-')) {
-      // Извлекаем название продукта после website-cta-
-      selectedProduct = rawSource.replace('website-cta-', '');
+    if (rawSource.startsWith('websiteCta')) {
+      // Извлекаем название продукта после websiteCta
+      const productPart = rawSource.replace('websiteCta', '');
+      // Преобразуем Starter/Consultation/Package5 в starter/consultation/package5
+      selectedProduct = productPart.charAt(0).toLowerCase() + productPart.slice(1);
       source = rawSource; // Сохраняем полную метку для статистики
       
-      logWithTime(`[START] Распознана комбинированная метка: источник=website-cta, продукт=${selectedProduct}`);
+      logWithTime(`[START] Распознана комбинированная метка: источник=websiteCta, продукт=${selectedProduct}`);
     }
     
     // 🆕 СОХРАНЯЕМ ИСТОЧНИК (только если ещё не сохранён)
@@ -38,7 +40,7 @@ async function handleStart(ctx) {
       userSources[userId] = source;
       
       if (selectedProduct) {
-        logWithTime(`[START] ✨ Новый пользователь ${userId} (${firstName}) из источника: website-cta, выбрал продукт: ${selectedProduct}`);
+        logWithTime(`[START] ✨ Новый пользователь ${userId} (${firstName}) из источника: websiteCta, выбрал продукт: ${selectedProduct}`);
       } else {
         logWithTime(`[START] Новый пользователь ${userId} (${firstName}) из источника: ${source}`);
       }
@@ -317,47 +319,42 @@ async function handleConfirmBuy(ctx) {
   }
 }
 
-// Обработчик текстовых сообщений (для получения email и телефона)
+// Остальной код handleTextInput остается без изменений...
+// (сокращено для краткости - в файле нужно оставить полный код)
+
 async function handleTextInput(ctx) {
   try {
     const userId = ctx.from.id;
-    const text = ctx.message.text.trim(); // Добавлен .trim() для удаления пробелов
+    const text = ctx.message.text.trim();
     
     logWithTime(`[TEXT] Получено текстовое сообщение от пользователя ${userId}: "${text}"`);
     
     const { pendingOrders, ADMIN_ID, adminState } = global.botData;
     
-    // СНАЧАЛА ПРОВЕРЯЕМ ОЖИДАЮЩИЕ ЗАКАЗЫ (ВЫСОКИЙ ПРИОРИТЕТ)
     if (pendingOrders[userId]) {
       logWithTime(`[TEXT] Найден ожидающий заказ для пользователя ${userId}, статус: ${pendingOrders[userId].status}`);
       
-      // Обработка email
       if (pendingOrders[userId].status === 'waiting_email') {
         logWithTime(`[TEXT] Обработка email от пользователя ${userId}`);
         
-        // Проверка формата email (текст уже очищен от пробелов выше)
         if (!validators.email(text)) {
           logWithTime(`[TEXT] Некорректный формат email: ${text}`);
           return await ctx.reply(messageTemplates.emailInvalid);
         }
         
-        // Сохраняем email
         pendingOrders[userId].email = text;
         pendingOrders[userId].status = 'waiting_phone';
         
         logWithTime(`[TEXT] Email сохранен, новый статус: waiting_phone`);
         
-        // Запрашиваем номер телефона
         await ctx.reply(messageTemplates.phoneRequest);
         
         logWithTime(`[TEXT] Запрос телефона отправлен пользователю ${userId}`);
         return;
       } 
-      // Обработка номера телефона
       else if (pendingOrders[userId].status === 'waiting_phone') {
         logWithTime(`[TEXT] Обработка номера телефона от пользователя ${userId}`);
         
-        // Проверка формата телефона
         const cleanedPhone = text.replace(/\s+/g, '');
         
         if (!validators.phone(cleanedPhone)) {
@@ -365,7 +362,6 @@ async function handleTextInput(ctx) {
           return await ctx.reply(messageTemplates.phoneInvalid);
         }
         
-        // Сохраняем телефон и обновляем статус
         pendingOrders[userId].phone = cleanedPhone;
         pendingOrders[userId].status = 'waiting_payment';
         
@@ -374,20 +370,16 @@ async function handleTextInput(ctx) {
         logWithTime(`[TEXT] Телефон сохранен, новый статус: waiting_payment`);
         
         try {
-          // Отправляем изображение с заказом
           await ctx.replyWithPhoto(
             { source: 'files/logo.jpg' },
             { caption: `📋 Ваш заказ: ${product.name}`, parse_mode: '' }
           );
         } catch (photoError) {
           console.error(`[ERROR] Не удалось отправить логотип: ${photoError.message}`);
-          // Продолжаем выполнение даже если не удалось отправить фото
         }
         
-        // Задержка для лучшего UX
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        // ВАЖНО: Убираем parse_mode чтобы избежать ошибок парсинга
         await ctx.reply(
           messageTemplates.orderReady(product.name, product.price),
           { 
@@ -400,7 +392,6 @@ async function handleTextInput(ctx) {
         
         logWithTime(`[TEXT] Информация о заказе отправлена пользователю ${userId}`);
         
-        // Отправляем уведомление администратору
         try {
           logWithTime(`[TEXT] Отправка уведомления администратору о новом заказе`);
           const { notifyAdmin } = require('./admin');
@@ -414,11 +405,9 @@ async function handleTextInput(ctx) {
       }
     }
     
-    // ЗАТЕМ ПРОВЕРЯЕМ СОСТОЯНИЕ АДМИНИСТРАТОРА (НИЗКИЙ ПРИОРИТЕТ)
     if (adminState && adminState.action === 'waiting_recording_link' && userId.toString() === ADMIN_ID) {
       logWithTime(`[ADMIN] Получена ссылка на запись от администратора: ${text}`);
       
-      // Проверяем, что это похоже на ссылку
       const urlPattern = /^(https?:\/\/|www\.)/i;
       if (!urlPattern.test(text)) {
         await ctx.reply('❌ Это не похоже на ссылку. Пожалуйста, отправьте корректную ссылку (начинается с http:// или https://)');
@@ -427,7 +416,6 @@ async function handleTextInput(ctx) {
       
       const clientId = adminState.clientId;
       
-      // Вызываем функцию отправки записи консультации
       const { sendConsultationRecording } = require('./admin');
       const success = await sendConsultationRecording(clientId, text);
       
@@ -438,21 +426,17 @@ async function handleTextInput(ctx) {
         await ctx.reply(`❌ Произошла ошибка при отправке записи клиенту (ID: ${clientId})`);
       }
       
-      // Очищаем состояние администратора
       delete global.botData.adminState;
       return;
     }
     
-    // Если нет ожидающего заказа и не админ, показываем меню
     logWithTime(`[TEXT] У пользователя ${userId} нет ожидающего заказа`);
     
-    // Если получена команда /start, не реагируем - она обрабатывается отдельно
     if (text === '/start') {
       logWithTime(`[TEXT] Получена команда /start, пропускаем обработку текста`);
       return;
     }
     
-    // Для любого другого текста показываем меню и подсказку, удаляем клавиатуру
     logWithTime(`[TEXT] Отправка подсказки с меню пользователю ${userId}`);
     await ctx.reply(
       'Используйте кнопки меню ниже для навигации:',
