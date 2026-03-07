@@ -53,33 +53,25 @@ bot.command('stats', async (ctx) => {
     
     // 🎯 ОБНОВЛЁННЫЕ ФУНКЦИИ ДЛЯ КОМБИНИРОВАННЫХ МЕТОК camelCase
     function getSourceEmoji(source) {
-      const emojiMap = {
-        'website': '🌐', 'website_hero': '🌐', 'websiteCta': '🌐', 'website_footer': '🌐',
-        'telegram_channel': '💬', 'telegram_group': '💬',
-        'instagram': '📸', 'vk': '🔵', 'youtube': '📺',
-        'direct': '👤', 'unknown': '❓'
-      };
-      
       // Для комбинированных меток типа websiteCtaStarter, websiteCtaConsultation
       if (source.startsWith('websiteCta')) {
         return '🌐';
       }
       
+      const emojiMap = {
+        'website': '🌐', 'website_hero': '🌐', 'website_footer': '🌐',
+        'telegram_channel': '💬', 'telegram_group': '💬',
+        'instagram': '📸', 'vk': '🔵', 'youtube': '📺',
+        'direct': '👤', 'unknown': '❓'
+      };
+      
       return emojiMap[source] || '❓';
     }
     
     function formatSource(source) {
-      const sourceNames = {
-        'website': 'Сайт', 'website_hero': 'Сайт (главный экран)',
-        'websiteCta': 'Сайт (призыв к действию)', 'website_footer': 'Сайт (подвал)',
-        'telegram_channel': 'Telegram канал @spokoinoe_dyhanie', 'telegram_group': 'Telegram группа',
-        'instagram': 'Instagram', 'vk': 'ВКонтакте', 'youtube': 'YouTube',
-        'direct': 'Прямая ссылка', 'unknown': 'Неизвестно'
-      };
-      
       // 🎯 ПОДДЕРЖКА КОМБИНИРОВАННЫХ МЕТОК websiteCtaStarter, websiteCtaConsultation, websiteCtaPackage5
       if (source.startsWith('websiteCta')) {
-        const productPart = source.replace('websiteCta', '');
+        const productPart = source.replace('websiteCta', ''); // Получаем Starter, Consultation, Package5
         const productNames = {
           'Starter': 'Стартовый',
           'Consultation': 'Консультация',
@@ -88,6 +80,14 @@ bot.command('stats', async (ctx) => {
         const productName = productNames[productPart] || productPart;
         return `Сайт (CTA) → ${productName}`;
       }
+      
+      const sourceNames = {
+        'website': 'Сайт', 'website_hero': 'Сайт (главный экран)',
+        'website_footer': 'Сайт (подвал)',
+        'telegram_channel': 'Telegram канал @spokoinoe_dyhanie', 'telegram_group': 'Telegram группа',
+        'instagram': 'Instagram', 'vk': 'ВКонтакте', 'youtube': 'YouTube',
+        'direct': 'Прямая ссылка', 'unknown': 'Неизвестно'
+      };
       
       return sourceNames[source] || source;
     }
