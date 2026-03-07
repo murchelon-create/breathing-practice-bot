@@ -54,14 +54,14 @@ bot.command('stats', async (ctx) => {
     // 🎯 ОБНОВЛЁННЫЕ ФУНКЦИИ ДЛЯ КОМБИНИРОВАННЫХ МЕТОК
     function getSourceEmoji(source) {
       const emojiMap = {
-        'website': '🌐', 'website_hero': '🌐', 'website_cta': '🌐', 'website_footer': '🌐',
+        'website': '🌐', 'website_hero': '🌐', 'website-cta': '🌐', 'website_footer': '🌐',
         'telegram_channel': '💬', 'telegram_group': '💬',
         'instagram': '📸', 'vk': '🔵', 'youtube': '📺',
         'direct': '👤', 'unknown': '❓'
       };
       
-      // Для комбинированных меток типа website_cta_*
-      if (source.startsWith('website_cta_')) {
+      // Для комбинированных меток типа website-cta-*
+      if (source.startsWith('website-cta-')) {
         return '🌐';
       }
       
@@ -71,15 +71,15 @@ bot.command('stats', async (ctx) => {
     function formatSource(source) {
       const sourceNames = {
         'website': 'Сайт', 'website_hero': 'Сайт (главный экран)',
-        'website_cta': 'Сайт (призыв к действию)', 'website_footer': 'Сайт (подвал)',
+        'website-cta': 'Сайт (призыв к действию)', 'website_footer': 'Сайт (подвал)',
         'telegram_channel': 'Telegram канал @spokoinoe_dyhanie', 'telegram_group': 'Telegram группа',
         'instagram': 'Instagram', 'vk': 'ВКонтакте', 'youtube': 'YouTube',
         'direct': 'Прямая ссылка', 'unknown': 'Неизвестно'
       };
       
-      // 🎯 ПОДДЕРЖКА КОМБИНИРОВАННЫХ МЕТОК website_cta_*
-      if (source.startsWith('website_cta_')) {
-        const product = source.replace('website_cta_', '');
+      // 🎯 ПОДДЕРЖКА КОМБИНИРОВАННЫХ МЕТОК website-cta-*
+      if (source.startsWith('website-cta-')) {
+        const product = source.replace('website-cta-', '');
         const productNames = {
           'starter': 'Стартовый',
           'consultation': 'Консультация',
@@ -93,20 +93,20 @@ bot.command('stats', async (ctx) => {
     }
     
     // Формируем сообщение
-    let message = '📊 *Статистика по источникам:*\n\n';
+    let message = '📊 *Статистика по источникам:*\\n\\n';
     
     if (sortedStats.length === 0) {
-      message += 'ℹ️ Пока нет данных об источниках.\n\n';
+      message += 'ℹ️ Пока нет данных об источниках.\\n\\n';
       message += 'Используйте ссылки с метками из файла SOURCES.md';
     } else {
       sortedStats.forEach(([source, count]) => {
         const emoji = getSourceEmoji(source);
         const formattedSource = formatSource(source);
-        message += `${emoji} ${formattedSource}: *${count}*\n`;
+        message += `${emoji} ${formattedSource}: *${count}*\\n`;
       });
       
       const totalUsers = Object.keys(userSources).length;
-      message += `\n👥 Всего пользователей: *${totalUsers}*`;
+      message += `\\n👥 Всего пользователей: *${totalUsers}*`;
     }
     
     await ctx.reply(message, { parse_mode: 'Markdown' });
@@ -130,26 +130,26 @@ bot.action('show_info', async (ctx) => {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     await ctx.reply(
-      `Привет, ${userName}!\n\n` +
-      `🧬 МЕТОД БУТЕЙКО\n\n` +
-      `Константин Павлович Бутейко — первый врач-физиолог, который доказал связь между неправильным дыханием и развитием более 150 заболеваний.\n\n` +
-      `✅ Что происходит при правильном дыхании:\n` +
-      `• Нормализуется уровень CO₂ в крови\n` +
-      `• Расширяются сосуды и бронхи\n` +
-      `• Улучшается кислородное питание тканей\n` +
-      `• Снижается спазм гладкой мускулатуры\n\n` +
-      `📊 Доказанная эффективность:\n` +
-      `Метод признан Минздравом РФ и применяется в клинической практике с 1985 года.\n\n` +
-      `🌟 Результаты зависят от вашей цели:\n` +
-      `• Снять стресс и напряжение — несколько минут практики\n` +
-      `• Улучшить сон и самочувствие — регулярная практика\n` +
-      `• Серьёзные изменения в здоровье — требуют времени и системного подхода\n\n` +
-      `💪 Преимущества метода:\n` +
-      `• Естественный подход без лекарств\n` +
-      `• Безопасен при правильном освоении\n` +
-      `• Навык остаётся с вами на всю жизнь\n` +
-      `• Можно практиковать в любом месте\n\n` +
-      `Выберите 🛍️ Купить курс в меню, чтобы ознакомиться с доступными программами.\n\n` +
+      `Привет, ${userName}!\\n\\n` +
+      `🧬 МЕТОД БУТЕЙКО\\n\\n` +
+      `Константин Павлович Бутейко — первый врач-физиолог, который доказал связь между неправильным дыханием и развитием более 150 заболеваний.\\n\\n` +
+      `✅ Что происходит при правильном дыхании:\\n` +
+      `• Нормализуется уровень CO₂ в крови\\n` +
+      `• Расширяются сосуды и бронхи\\n` +
+      `• Улучшается кислородное питание тканей\\n` +
+      `• Снижается спазм гладкой мускулатуры\\n\\n` +
+      `📊 Доказанная эффективность:\\n` +
+      `Метод признан Минздравом РФ и применяется в клинической практике с 1985 года.\\n\\n` +
+      `🌟 Результаты зависят от вашей цели:\\n` +
+      `• Снять стресс и напряжение — несколько минут практики\\n` +
+      `• Улучшить сон и самочувствие — регулярная практика\\n` +
+      `• Серьёзные изменения в здоровье — требуют времени и системного подхода\\n\\n` +
+      `💪 Преимущества метода:\\n` +
+      `• Естественный подход без лекарств\\n` +
+      `• Безопасен при правильном освоении\\n` +
+      `• Навык остаётся с вами на всю жизнь\\n` +
+      `• Можно практиковать в любом месте\\n\\n` +
+      `Выберите 🛒️ Купить курс в меню, чтобы ознакомиться с доступными программами.\\n\\n` +
       `📞 Связаться с преподавателем: [Александр Попов](https://t.me/AS_Popov87)`,
       { 
         parse_mode: 'Markdown',
@@ -184,26 +184,26 @@ bot.action('show_purchases', async (ctx) => {
     }
 
     const orders = completedOrders[userId];
-    let message = '*Ваши покупки:*\n\n';
+    let message = '*Ваши покупки:*\\n\\n';
 
     orders.forEach((order, index) => {
       const product = products[order.productId];
       const orderDate = new Date(order.completedAt).toLocaleDateString();
       const orderNumber = order.orderId || `#${Date.now().toString().slice(-6)}`;
 
-      message += `*${index + 1}. ${product.name}*\n`;
-      message += `🆔 Заказ: ${orderNumber}\n`;
-      message += `📅 Дата: ${orderDate}\n`;
-      message += `💳 Цена: ${product.price}\n`;
+      message += `*${index + 1}. ${product.name}*\\n`;
+      message += `🆔 Заказ: ${orderNumber}\\n`;
+      message += `📅 Дата: ${orderDate}\\n`;
+      message += `💳 Цена: ${product.price}\\n`;
 
       if (order.recordingSent) {
-        message += `🎬 Запись консультации: ✅\n`;
+        message += `🎬 Запись консультации: ✅\\n`;
       }
 
-      message += '\n';
+      message += '\\n';
     });
 
-    message += '\nДля повторного доступа к материалам напишите [Александру](https://t.me/AS_Popov87)';
+    message += '\\nДля повторного доступа к материалам напишите [Александру](https://t.me/AS_Popov87)';
 
     await ctx.reply(
       message, 
@@ -229,7 +229,7 @@ bot.action('show_consultations', async (ctx) => {
 
     if (!completedOrders[userId] || completedOrders[userId].length === 0) {
       await ctx.reply(
-        'У вас пока нет консультаций. Выберите 🛍️ Купить курс, чтобы приобрести индивидуальную консультацию.',
+        'У вас пока нет консультаций. Выберите 🛒️ Купить курс, чтобы приобрести индивидуальную консультацию.',
         { 
           reply_markup: {
             ...mainKeyboard().reply_markup,
@@ -247,7 +247,7 @@ bot.action('show_consultations', async (ctx) => {
 
     if (consultations.length === 0) {
       await ctx.reply(
-        'У вас пока нет индивидуальных консультаций. Выберите 🛍️ Купить курс, чтобы приобрести консультацию.',
+        'У вас пока нет индивидуальных консультаций. Выберите 🛒️ Купить курс, чтобы приобрести консультацию.',
         { 
           reply_markup: {
             ...mainKeyboard().reply_markup,
@@ -259,25 +259,25 @@ bot.action('show_consultations', async (ctx) => {
       return;
     }
 
-    let message = '*Ваши консультации:*\n\n';
+    let message = '*Ваши консультации:*\\n\\n';
 
     consultations.forEach((consultation, index) => {
       const product = products[consultation.productId];
       const orderDate = new Date(consultation.completedAt).toLocaleDateString();
       const orderNumber = consultation.orderId || `#${Date.now().toString().slice(-6)}`;
 
-      message += `*${index + 1}. ${product.name}*\n`;
-      message += `🆔 Заказ: ${orderNumber}\n`;
-      message += `📅 Дата: ${orderDate}\n`;
+      message += `*${index + 1}. ${product.name}*\\n`;
+      message += `🆔 Заказ: ${orderNumber}\\n`;
+      message += `📅 Дата: ${orderDate}\\n`;
 
       if (consultation.recordingSent) {
-        message += `🎬 Запись: ✅ [Доступна]\n`;
-        message += `🔗 Ссылка: ${consultation.recordingLink || 'Свяжитесь с преподавателем'}\n`;
+        message += `🎬 Запись: ✅ [Доступна]\\n`;
+        message += `🔗 Ссылка: ${consultation.recordingLink || 'Свяжитесь с преподавателем'}\\n`;
       } else {
-        message += `🎬 Запись: ⏳ [Ожидает отправки]\n`;
+        message += `🎬 Запись: ⏳ [Ожидает отправки]\\n`;
       }
 
-      message += '\n';
+      message += '\\n';
     });
 
     message += 'Для получения записи консультации или дополнительной информации свяжитесь с [Александром](https://t.me/AS_Popov87)';
@@ -510,7 +510,7 @@ async function startApp() {
 
         bot.telegram.sendMessage(
           ADMIN_ID,
-          `🤖 Бот запущен на Railway!\n\nВремя запуска: ${new Date().toLocaleString()}\nИмя бота: @${botInfo.username}\nID бота: ${botInfo.id}\nURL: ${APP_URL}\nPORT: ${PORT}\nРежим оптимизации: ${RAILWAY_OPTIMIZED_MODE ? 'Включен ✅' : 'Выключен ❌'}\n${memoryInfo}`
+          `🤖 Бот запущен на Railway!\\n\\nВремя запуска: ${new Date().toLocaleString()}\\nИмя бота: @${botInfo.username}\\nID бота: ${botInfo.id}\\nURL: ${APP_URL}\\nPORT: ${PORT}\\nРежим оптимизации: ${RAILWAY_OPTIMIZED_MODE ? 'Включен ✅' : 'Выключен ❌'}\\n${memoryInfo}`
         ).catch(e => console.warn('Не удалось отправить уведомление:', e.message));
       } catch (error) {
         console.error('Ошибка при отправке уведомления админу:', error.message);
