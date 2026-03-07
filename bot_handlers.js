@@ -70,14 +70,18 @@ bot.command('stats', async (ctx) => {
     
     function formatSource(source) {
       // 🎯 ПОДДЕРЖКА КОМБИНИРОВАННЫХ МЕТОК websiteCtaStarter, websiteCtaConsultation, websiteCtaPackage5
+      // С ЛЮБЫМ РЕГИСТРОМ (starter/Starter/STARTER)
       if (source.startsWith('websiteCta')) {
-        const productPart = source.replace('websiteCta', ''); // Получаем Starter, Consultation, Package5
+        const productPartRaw = source.replace('websiteCta', ''); // Получаем Starter / starter / Consultation ...
+        const productKey = productPartRaw.toLowerCase();         // Приводим к нижнему регистру: starter / consultation / package5
+        
         const productNames = {
-          'Starter': 'Стартовый',
-          'Consultation': 'Консультация',
-          'Package5': 'Пакет 5'
+          starter: 'Стартовый',
+          consultation: 'Консультация',
+          package5: 'Пакет 5'
         };
-        const productName = productNames[productPart] || productPart;
+        
+        const productName = productNames[productKey] || productPartRaw || 'неизвестный продукт';
         return `Сайт (CTA) → ${productName}`;
       }
       
