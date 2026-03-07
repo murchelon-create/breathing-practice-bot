@@ -19,17 +19,17 @@ async function handleStart(ctx) {
     // 🆕 ПОЛУЧАЕМ ИСТОЧНИК ИЗ ПАРАМЕТРА START
     const rawSource = ctx.startPayload || 'unknown';
     
-    // 🎯 ПАРСИМ КОМБИНИРОВАННЫЕ МЕТКИ (website_cta_starter → website_cta + starter)
+    // 🎯 ПАРСИМ КОМБИНИРОВАННЫЕ МЕТКИ (website-cta-starter → website-cta + starter)
     let source = rawSource;
     let selectedProduct = null;
     
     // Проверяем, есть ли в метке информация о продукте
-    if (rawSource.startsWith('website_cta_')) {
-      // Извлекаем название продукта после website_cta_
-      selectedProduct = rawSource.replace('website_cta_', '');
+    if (rawSource.startsWith('website-cta-')) {
+      // Извлекаем название продукта после website-cta-
+      selectedProduct = rawSource.replace('website-cta-', '');
       source = rawSource; // Сохраняем полную метку для статистики
       
-      logWithTime(`[START] Распознана комбинированная метка: источник=website_cta, продукт=${selectedProduct}`);
+      logWithTime(`[START] Распознана комбинированная метка: источник=website-cta, продукт=${selectedProduct}`);
     }
     
     // 🆕 СОХРАНЯЕМ ИСТОЧНИК (только если ещё не сохранён)
@@ -38,7 +38,7 @@ async function handleStart(ctx) {
       userSources[userId] = source;
       
       if (selectedProduct) {
-        logWithTime(`[START] ✨ Новый пользователь ${userId} (${firstName}) из источника: website_cta, выбрал продукт: ${selectedProduct}`);
+        logWithTime(`[START] ✨ Новый пользователь ${userId} (${firstName}) из источника: website-cta, выбрал продукт: ${selectedProduct}`);
       } else {
         logWithTime(`[START] Новый пользователь ${userId} (${firstName}) из источника: ${source}`);
       }
@@ -73,20 +73,7 @@ async function handleStart(ctx) {
       
       // Удаляем клавиатуру и показываем меню с inline-кнопками
       await ctx.reply(
-        `🌬️ *Добро пожаловать, ${firstName}!* 🌬️
-
-Через этого бота вы можете:
-• Приобрести курсы дыхательной гимнастики по методу Бутейко
-• Записаться на индивидуальные консультации
-• Получить доступ к материалам и видеоурокам
-
-*Наши практики помогут вам:*
-✅ Повысить энергию и работоспособность
-✅ Снизить уровень стресса
-✅ Улучшить качество сна
-✅ Укрепить здоровье
-
-Выберите действие в меню ниже:`,
+        `🌬️ *Добро пожаловать, ${firstName}!* 🌬️\n\nЧерез этого бота вы можете:\n• Приобрести курсы дыхательной гимнастики по методу Бутейко\n• Записаться на индивидуальные консультации\n• Получить доступ к материалам и видеоурокам\n\n*Наши практики помогут вам:*\n✅ Повысить энергию и работоспособность\n✅ Снизить уровень стресса\n✅ Улучшить качество сна\n✅ Укрепить здоровье\n\nВыберите действие в меню ниже:`,
         {
           parse_mode: 'Markdown',
           reply_markup: {
@@ -101,7 +88,7 @@ async function handleStart(ctx) {
       console.error(`[ERROR] Ошибка при отправке логотипа: ${fileError.message}`);
       // Если не удалось отправить фото, все равно отправляем текстовое сообщение
       await ctx.reply(
-        `🌬️ *Добро пожаловать, ${firstName}!* 🌬️\n\nВыберите действие в меню ниже:`,
+        `🌬️ *Добро пожаловать, ${firstName}!* 🌬️\\n\\nВыберите действие в меню ниже:`,
         {
           parse_mode: 'Markdown',
           reply_markup: {
@@ -117,7 +104,7 @@ async function handleStart(ctx) {
     
     if (userId !== parseInt(ADMIN_ID)) {
       // Формируем сообщение администратору
-      let adminMessage = `🆕 Новый пользователь:\n- Имя: ${firstName} ${ctx.from.last_name || ''}\n- Username: @${ctx.from.username || 'отсутствует'}\n- ID: ${userId}`;
+      let adminMessage = `🆕 Новый пользователь:\\n- Имя: ${firstName} ${ctx.from.last_name || ''}\\n- Username: @${ctx.from.username || 'отсутствует'}\\n- ID: ${userId}`;
       
       // 🎯 Добавляем информацию о выбранном продукте если есть
       if (selectedProduct) {
@@ -127,7 +114,7 @@ async function handleStart(ctx) {
           package5: 'Пакет 5 занятий'
         };
         const productName = productNames[selectedProduct] || selectedProduct;
-        adminMessage += `\n- Выбран продукт: ${productName} 🎯`;
+        adminMessage += `\\n- Выбран продукт: ${productName} 🎯`;
       }
       
       // Отправляем уведомление админу асинхронно
@@ -186,7 +173,7 @@ async function handleBuyAction(ctx) {
       
       // Предлагаем отменить старый заказ и создать новый
       await ctx.reply(
-        `⚠️ У вас уже есть незавершённый заказ:\n\n📦 ${existingProduct.name}\n💰 ${existingProduct.price}\n\nХотите отменить его и создать новый заказ на "${product.name}"?`,
+        `⚠️ У вас уже есть незавершённый заказ:\\n\\n📦 ${existingProduct.name}\\n💰 ${existingProduct.price}\\n\\nХотите отменить его и создать новый заказ на "${product.name}"?`,
         {
           reply_markup: {
             inline_keyboard: [
