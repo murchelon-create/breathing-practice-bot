@@ -51,17 +51,17 @@ bot.command('stats', async (ctx) => {
     // Сортируем по количеству (по убыванию)
     const sortedStats = Object.entries(stats).sort((a, b) => b[1] - a[1]);
     
-    // 🎯 ОБНОВЛЁННЫЕ ФУНКЦИИ ДЛЯ КОМБИНИРОВАННЫХ МЕТОК
+    // 🎯 ОБНОВЛЁННЫЕ ФУНКЦИИ ДЛЯ КОМБИНИРОВАННЫХ МЕТОК camelCase
     function getSourceEmoji(source) {
       const emojiMap = {
-        'website': '🌐', 'website_hero': '🌐', 'website-cta': '🌐', 'website_footer': '🌐',
+        'website': '🌐', 'website_hero': '🌐', 'websiteCta': '🌐', 'website_footer': '🌐',
         'telegram_channel': '💬', 'telegram_group': '💬',
         'instagram': '📸', 'vk': '🔵', 'youtube': '📺',
         'direct': '👤', 'unknown': '❓'
       };
       
-      // Для комбинированных меток типа website-cta-*
-      if (source.startsWith('website-cta-')) {
+      // Для комбинированных меток типа websiteCtaStarter, websiteCtaConsultation
+      if (source.startsWith('websiteCta')) {
         return '🌐';
       }
       
@@ -71,21 +71,21 @@ bot.command('stats', async (ctx) => {
     function formatSource(source) {
       const sourceNames = {
         'website': 'Сайт', 'website_hero': 'Сайт (главный экран)',
-        'website-cta': 'Сайт (призыв к действию)', 'website_footer': 'Сайт (подвал)',
+        'websiteCta': 'Сайт (призыв к действию)', 'website_footer': 'Сайт (подвал)',
         'telegram_channel': 'Telegram канал @spokoinoe_dyhanie', 'telegram_group': 'Telegram группа',
         'instagram': 'Instagram', 'vk': 'ВКонтакте', 'youtube': 'YouTube',
         'direct': 'Прямая ссылка', 'unknown': 'Неизвестно'
       };
       
-      // 🎯 ПОДДЕРЖКА КОМБИНИРОВАННЫХ МЕТОК website-cta-*
-      if (source.startsWith('website-cta-')) {
-        const product = source.replace('website-cta-', '');
+      // 🎯 ПОДДЕРЖКА КОМБИНИРОВАННЫХ МЕТОК websiteCtaStarter, websiteCtaConsultation, websiteCtaPackage5
+      if (source.startsWith('websiteCta')) {
+        const productPart = source.replace('websiteCta', '');
         const productNames = {
-          'starter': 'Стартовый',
-          'consultation': 'Консультация',
-          'package5': 'Пакет 5'
+          'Starter': 'Стартовый',
+          'Consultation': 'Консультация',
+          'Package5': 'Пакет 5'
         };
-        const productName = productNames[product] || product;
+        const productName = productNames[productPart] || productPart;
         return `Сайт (CTA) → ${productName}`;
       }
       
