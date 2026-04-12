@@ -1,9 +1,8 @@
 // Файл: handlers.js
 
-const { logWithTime, getUserName } = require('./utils');
+const { logWithTime } = require('./utils');
 const { products, messageTemplates } = require('./data');
 
-// /start
 async function handleStart(ctx) {
   try {
     const userId = ctx.from.id;
@@ -17,10 +16,8 @@ async function handleStart(ctx) {
         const productPart = payload.replace('websiteCta', '');
         selectedProduct = productPart.charAt(0).toLowerCase() + productPart.slice(1);
         source = payload;
-        logWithTime(`[START] Источник=websiteCta, продукт=${selectedProduct}`);
       } else {
         source = payload;
-        logWithTime(`[START] Источник: ${source}`);
       }
     }
 
@@ -31,9 +28,9 @@ async function handleStart(ctx) {
 
     if (!global.botData.userSources[userId]) {
       global.botData.userSources[userId] = { source, firstSeen: new Date().toISOString(), firstName };
-      logWithTime(`[START] ✨ Новый пользователь ${userId} (${firstName}) из: ${source}, продукт: ${selectedProduct}`);
+      logWithTime(`[START] ✨ Новый ${userId} (${firstName}) из: ${source}`);
     } else {
-      logWithTime(`[START] 🔄 Возвращающийся ${userId} (${firstName}), источник: ${source}`);
+      logWithTime(`[START] 🔄 Возвращающийся ${userId} (${firstName})`);
     }
 
     const { mainKeyboard } = require('./utils');
@@ -44,17 +41,16 @@ async function handleStart(ctx) {
       await showProductInfo(ctx, selectedProduct);
     }
 
-    const adminMessage = formatAdminNotification(userId, firstName, source, selectedProduct);
-    await sendAdminNotification(ctx, adminMessage);
+    const adminMsg = formatAdminNotification(userId, firstName, source, selectedProduct);
+    await sendAdminNotification(ctx, adminMsg);
 
-    logWithTime(`[START] Пользователь ${userId} (${firstName}) запустил бота`);
+    logWithTime(`[START] Пользователь ${userId} запустил бота`);
   } catch (error) {
     console.error(`[START] Ошибка: ${error.message}`);
-    await ctx.reply('Произошла ошибка при запуске. Попробуйте позже.');
+    await ctx.reply('Произошла ошибка. Попробуйте позже.');
   }
 }
 
-// Обработка текстовых сообщений (почта, телефон, ссылка на запись)
 async function handleTextInput(ctx) {
   try {
     const userId = ctx.from.id;
@@ -64,17 +60,13 @@ async function handleTextInput(ctx) {
       global.botData = { pendingOrders: {}, completedOrders: {}, userSources: {} };
     }
 
-    const pendingOrder = global.botData.pendingOrders?.[userId];
-    const pendingRecording = global.botData.pendingRecordings?.[userId];
-
-    // Админ вводит ссылку на запись
-    if (pendingRecording) {
-      const clientId = pendingRecording;
+    // Админ отправляет ссылку на запись
+    if (global.botData.pendingRecordings?.[userId]) {
+      const clientId = global.botData.pendingRecordings[userId];
       delete global.botData.pendingRecordings[userId];
 
-      if (!global.botData.completedOrders[clientId]) global.botData.completedOrders[clientId] = [];
-      const orders = global.botData.completedOrders[clientId];
-      if (orders.length > 0) {
+      const orders = global.botData.completedOrders?.[clientId];
+      if (orders && orders.length > 0) {
         orders[orders.length - 1].recordingSent = true;
         orders[orders.length - 1].recordingLink = text;
       }
@@ -86,48 +78,46 @@ async function handleTextInput(ctx) {
         );
         await ctx.reply(`✅ Запись отправлена пользователю ${clientId}`);
       } catch (err) {
-        await ctx.reply(`❌ Не удалось отправить запись: ${err.message}`);
+        await ctx.reply(`❌ Не удалось: ${err.message}`);
       }
       return;
     }
 
-    // Пользователь вводит email или телефон
+    // Пользователь оформляет заказ
+    const pendingOrder = global.botData.pendingOrders?.[userId];
     if (pendingOrder) {
       const product = products[pendingOrder.productId];
 
       if (pendingOrder.step === 'email') {
         global.botData.pendingOrders[userId].email = text;
         global.botData.pendingOrders[userId].step = 'phone';
-        await ctx.reply(messageTemplates.phoneRequest(product.name), { reply_markup: { force_reply: true } });
+        // phoneRequest — это строка, не функция
+        await ctx.reply(messageTemplates.phoneRequest, { reply_markup: { force_reply: true } });
         return;
       }
 
       if (pendingOrder.step === 'phone') {
+        const orderId = `#${Date.now().toString().slice(-6)}`;
         const email = pendingOrder.email;
         const phone = text;
-        const orderId = `#${Date.now().toString().slice(-6)}`;
 
-        // Сохраняем заказ
-        global.botData.pendingOrders[userId] = {
-          ...pendingOrder,
-          phone,
-          orderId,
-          step: 'awaiting_payment'
-        };
+        global.botData.pendingOrders[userId] = { ...pendingOrder, phone, orderId, step: 'awaiting_payment' };
 
-        // Сообщение пользователю
         await ctx.reply(
-          messageTemplates.paymentInstructions(product.name, product.price, orderId),
+          `💳 *Оформление заказа ${orderId}*\n\n` +
+          `📚 Продукт: ${product.name}\n` +
+          `💰 Стоимость: ${product.price}\n\n` +
+          `Александр свяжется с вами в ближайшее время для оплаты и согласования времени занятий.\n\n` +
+          `📧 Email: ${email}\n📱 Телефон: ${phone}`,
           { parse_mode: 'Markdown' }
         );
 
-        // Уведомляем админа
         const { ADMIN_ID } = require('./config');
         try {
           await ctx.telegram.sendMessage(
             ADMIN_ID,
             `💰 Новый заказ ${orderId}\n` +
-            `👤 Пользователь: ${userId}\n` +
+            `👤 ID: ${userId}\n` +
             `📚 Продукт: ${product.name}\n` +
             `💳 Цена: ${product.price}\n` +
             `📧 Email: ${email}\n` +
@@ -144,14 +134,14 @@ async function handleTextInput(ctx) {
           logWithTime(`[ORDER] Не удалось уведомить админа: ${err.message}`);
         }
 
-        logWithTime(`[ORDER] Заказ ${orderId} от ${userId} (${product.name})`);
+        logWithTime(`[ORDER] ${orderId} от ${userId} (${product.name})`);
         return;
       }
     }
 
-    // Если нет активного заказа — показываем главное меню
+    // Неизвестное сообщение
     const { mainKeyboard } = require('./utils');
-    await ctx.reply(messageTemplates.unknownMessage || 'Не понял вас. Воспользуйтесь кнопками меню:', mainKeyboard());
+    await ctx.reply('Не понял вас. Воспользуйтесь кнопками меню:', mainKeyboard());
   } catch (error) {
     console.error(`[TEXT] Ошибка: ${error.message}`);
     throw error;
@@ -162,17 +152,14 @@ async function showProductInfo(ctx, productId) {
   try {
     const product = products[productId];
     if (!product) return;
-    await ctx.reply(
-      product.fullDescription,
-      {
-        parse_mode: 'HTML',
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: `💳 Записаться — ${product.price}`, callback_data: `buy_${productId}` }]
-          ]
-        }
+    await ctx.reply(product.fullDescription, {
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: `💳 Записаться — ${product.price}`, callback_data: `buy_${productId}` }]
+        ]
       }
-    );
+    });
   } catch (error) {
     console.error(`[PRODUCT] Ошибка: ${error.message}`);
   }
@@ -191,7 +178,7 @@ async function sendAdminNotification(ctx, message) {
     const adminIds = config.ADMIN_IDS || (config.ADMIN_ID ? [config.ADMIN_ID] : []);
     for (const adminId of adminIds) {
       try { await ctx.telegram.sendMessage(adminId, message); }
-      catch (err) { logWithTime(`[ADMIN] Не удалось отправить admin ${adminId}: ${err.message}`); }
+      catch (err) { logWithTime(`[ADMIN] Не удалось: ${err.message}`); }
     }
   } catch (error) {
     logWithTime(`[ADMIN] Ошибка: ${error.message}`);
