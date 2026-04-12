@@ -15,7 +15,6 @@ const {
 const { mainKeyboard, consultationsKeyboard, removeKeyboard, sendMessageWithInlineKeyboard, fileExists } = require('./utils');
 const { handleStart } = require('./handlers');
 const { confirmPayment, sendConsultationRecording } = require('./admin');
-const { setupPing } = require('./ping');
 const { setupScheduler } = require('./scheduler');
 const { setupBotCommands, setupCommandHandlers } = require('./menu_commands');
 
@@ -64,7 +63,7 @@ bot.action('buy_course_menu', async (ctx) => {
   }
 });
 
-// Обработчик для кнопки "Купить" через клавиатуру (текст "🛍️ Купить курс")
+// Обработчик для кнопки "Купить" через клавиатуру
 bot.hears('🛍️ Купить курс', async (ctx) => {
   try {
     const { getUserName } = require('./utils');
@@ -89,31 +88,26 @@ bot.hears('🛍️ Купить курс', async (ctx) => {
   }
 });
 
-// Обработчики административных кнопок (confirm_payment_, send_recording_)
+// Обработчики административных кнопок
 bot.action(/^confirm_payment_(.+)$/, async (ctx) => {
   try {
     const clientId = ctx.match[1];
     logWithTime(`[ADMIN] Админ подтверждает оплату для clientId: ${clientId}`);
     
-    // Вызываем функцию подтверждения оплаты
     await confirmPayment(clientId);
     
-    // Проверяем, является ли это консультацией
     const order = pendingOrders[clientId] || completedOrders[clientId]?.[completedOrders[clientId].length - 1];
     const isConsultation = order && (order.productId === 'trial' || order.productId === 'intensive' || order.productId === 'course');
     
-    // Заменяем кнопки на новые (НЕ УДАЛЯЕМ!)
     try {
       if (isConsultation) {
-        // Для консультаций - кнопки для отправки записи
         await ctx.editMessageReplyMarkup({
           inline_keyboard: [
-            [{ text: '🎬 Отправить запись занятия', callback_data: `send_recording_${clientId}` }],
+            [{ text: '🎥 Отправить запись занятия', callback_data: `send_recording_${clientId}` }],
             [{ text: '✅ Оплата подтверждена', callback_data: 'payment_confirmed_done' }]
           ]
         });
       } else {
-        // Для остальных - простая отметка
         await ctx.editMessageReplyMarkup({
           inline_keyboard: [
             [{ text: '✅ Оплата подтверждена', callback_data: 'payment_confirmed_done' }]
@@ -139,11 +133,10 @@ bot.action(/^send_recording_(.+)$/, async (ctx) => {
     logWithTime(`[ADMIN] Отправка записи для clientId: ${clientId}`);
     
     await ctx.reply(
-      `🎬 Отправка записи консультации\n\nВведите ссылку на запись для пользователя ${clientId}:`,
+      `🎥 Отправка записи консультации\n\nВведите ссылку на запись для пользователя ${clientId}:`,
       { reply_markup: { force_reply: true } }
     );
     
-    // Сохраняем состояние для ожидания ссылки
     if (!global.botData.pendingRecordings) {
       global.botData.pendingRecordings = {};
     }
@@ -193,30 +186,16 @@ async function startBot() {
     await setupBotCommands(bot);
     setupCommandHandlers(bot, handleStart);
     setupScheduler(bot);
-    setupPing(app, bot);
 
-    if (APP_URL) {
-      const webhookPath = `/webhook/${process.env.BOT_TOKEN}`;
-      await bot.telegram.setWebhook(`${APP_URL}${webhookPath}`);
-
-      app.post(webhookPath, (req, res) => {
-        bot.handleUpdate(req.body, res);
-      });
-
-      app.listen(PORT, () => {
-        logWithTime(`✅ Бот запущен в режиме webhook на порту ${PORT}`);
-        logWithTime(`🌐 Webhook URL: ${APP_URL}${webhookPath}`);
-      });
-    } else {
-      await bot.telegram.deleteWebhook();
-      bot.launch();
-      logWithTime('✅ Бот запущен в режиме polling');
-    }
+    // Удаляем вебхук и запускаем polling
+    await bot.telegram.deleteWebhook();
+    bot.launch();
+    logWithTime('✅ Бот запущен в режиме polling');
 
     try {
       await bot.telegram.sendMessage(ADMIN_ID, '🟢 Бот успешно запущен!');
     } catch (err) {
-      logWithTime(`⚠️ Не удалось отправить уведомление о запуске: ${err.message}`);
+      logWithTime(`⚠️ Не удалось отправить уведомнеие о запуске: ${err.message}`);
     }
 
     logWithTime('✅ Бот успешно инициализирован');
