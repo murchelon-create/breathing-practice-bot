@@ -23,7 +23,7 @@ async function handleStart(ctx) {
       if (rawSource.startsWith('websiteCta')) {
         // Извлекаем название продукта после websiteCta
         const productPart = rawSource.replace('websiteCta', '');
-        // Преобразуем Trial/Intensive/Package5 в trial/intensive/package5
+        // Преобразуем Trial/Intensive/Course в trial/intensive/course
         selectedProduct = productPart.charAt(0).toLowerCase() + productPart.slice(1);
         source = rawSource; // Сохраняем полную метку для статистики
         
@@ -115,12 +115,11 @@ async function showProductInfo(ctx, productId) {
 function formatAdminNotification(userId, firstName, source, selectedProduct) {
   let adminMessage = `🆕 Новый пользователь:\n- ID: ${userId}\n- Имя: ${firstName}\n- Источник: ${source}`;
   
-  // 🎯 Добавляем информацию о выбранном продукте если есть
   if (selectedProduct) {
     const productNames = {
       trial: 'Пробное занятие',
       intensive: 'Недельный интенсив',
-      package5: 'Курс 5 занятий'
+      course: 'Курс 5 занятий',
     };
     const productName = productNames[selectedProduct] || selectedProduct;
     adminMessage += `\n- Выбран продукт: ${productName} 🎯`;
