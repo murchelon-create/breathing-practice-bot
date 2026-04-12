@@ -3,6 +3,9 @@
 const { logWithTime } = require('./utils');
 const { products, messageTemplates } = require('./data');
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phoneRegex = /^\+?[0-9]{10,15}$/;
+
 async function handleStart(ctx) {
   try {
     const userId = ctx.from.id;
@@ -54,7 +57,7 @@ async function handleStart(ctx) {
 async function handleTextInput(ctx) {
   try {
     const userId = ctx.from.id;
-    const text = ctx.message.text;
+    const text = ctx.message.text.trim();
 
     if (!global.botData) {
       global.botData = { pendingOrders: {}, completedOrders: {}, userSources: {} };
@@ -64,18 +67,13 @@ async function handleTextInput(ctx) {
     if (global.botData.pendingRecordings?.[userId]) {
       const clientId = global.botData.pendingRecordings[userId];
       delete global.botData.pendingRecordings[userId];
-
       const orders = global.botData.completedOrders?.[clientId];
       if (orders && orders.length > 0) {
         orders[orders.length - 1].recordingSent = true;
         orders[orders.length - 1].recordingLink = text;
       }
-
       try {
-        await ctx.telegram.sendMessage(
-          parseInt(clientId),
-          `🎥 Запись вашего занятия готова!\n\n🔗 ${text}`
-        );
+        await ctx.telegram.sendMessage(parseInt(clientId), `🎥 Запись вашего занятия готова!\n\n🔗 ${text}`);
         await ctx.reply(`✅ Запись отправлена пользователю ${clientId}`);
       } catch (err) {
         await ctx.reply(`❌ Не удалось: ${err.message}`);
@@ -83,32 +81,49 @@ async function handleTextInput(ctx) {
       return;
     }
 
-    // Пользователь оформляет заказ
+    // Оформление заказа
     const pendingOrder = global.botData.pendingOrders?.[userId];
     if (pendingOrder) {
       const product = products[pendingOrder.productId];
 
       if (pendingOrder.step === 'email') {
+        // Валидация email
+        if (!emailRegex.test(text)) {
+          await ctx.reply(
+            '❌ Неправильный формат email.\n\nВведите корректный адрес:\nПример: email@example.com',
+            { reply_markup: { force_reply: true } }
+          );
+          return;
+        }
         global.botData.pendingOrders[userId].email = text;
         global.botData.pendingOrders[userId].step = 'phone';
-        // phoneRequest — это строка, не функция
-        await ctx.reply(messageTemplates.phoneRequest, { reply_markup: { force_reply: true } });
+        await ctx.reply(
+          '📱 Теперь введите номер телефона.\n\nПример: +79991234567',
+          { reply_markup: { force_reply: true } }
+        );
         return;
       }
 
       if (pendingOrder.step === 'phone') {
+        // Валидация телефона
+        const cleanPhone = text.replace(/[\s\-\(\)]/g, '');
+        if (!phoneRegex.test(cleanPhone)) {
+          await ctx.reply(
+            '❌ Неправильный номер телефона.\n\nВведите номер в формате:\nПример: +79991234567',
+            { reply_markup: { force_reply: true } }
+          );
+          return;
+        }
         const orderId = `#${Date.now().toString().slice(-6)}`;
         const email = pendingOrder.email;
-        const phone = text;
 
-        global.botData.pendingOrders[userId] = { ...pendingOrder, phone, orderId, step: 'awaiting_payment' };
+        global.botData.pendingOrders[userId] = { ...pendingOrder, phone: cleanPhone, orderId, step: 'awaiting_payment' };
 
         await ctx.reply(
-          `💳 *Оформление заказа ${orderId}*\n\n` +
+          `✅ Отлично!\n\n*Заявка ${orderId} принята*\n\n` +
           `📚 Продукт: ${product.name}\n` +
           `💰 Стоимость: ${product.price}\n\n` +
-          `Александр свяжется с вами в ближайшее время для оплаты и согласования времени занятий.\n\n` +
-          `📧 Email: ${email}\n📱 Телефон: ${phone}`,
+          `Александр свяжется с вами в ближайшее время для оплаты и согласования времени.`,
           { parse_mode: 'Markdown' }
         );
 
@@ -121,7 +136,7 @@ async function handleTextInput(ctx) {
             `📚 Продукт: ${product.name}\n` +
             `💳 Цена: ${product.price}\n` +
             `📧 Email: ${email}\n` +
-            `📱 Телефон: ${phone}`,
+            `📱 Телефон: ${cleanPhone}`,
             {
               reply_markup: {
                 inline_keyboard: [
