@@ -10,10 +10,10 @@ const { mainKeyboard, consultationsKeyboard, getUserName } = require('./utils');
  */
 const botCommands = [
   { command: 'start', description: 'Начать работу с ботом' },
-  { command: 'buy', description: 'Купить курс или консультацию' },
-  { command: 'info', description: 'Информация о курсах' },
+  { command: 'buy', description: 'Записаться на занятие' },
+  { command: 'info', description: 'Информация о методе и курсах' },
   { command: 'purchases', description: 'Мои покупки' },
-  { command: 'consultations', description: 'Мои консультации' },
+  { command: 'consultations', description: 'Мои занятия' },
   { command: 'contact', description: 'Связаться с преподавателем' },
   { command: 'help', description: 'Получить помощь' }
 ];
@@ -25,7 +25,6 @@ const botCommands = [
  */
 async function setupBotCommands(bot) {
   try {
-    // Устанавливаем команды для всех чатов с ботом
     await bot.telegram.setMyCommands(botCommands);
     logWithTime('✅ Команды меню бота успешно настроены');
     return true;
@@ -42,30 +41,27 @@ async function setupBotCommands(bot) {
  * @param {Function} handleStart - Функция обработчик для команды start
  */
 function setupCommandHandlers(bot, handleStart) {
-  // Обработчик /start уже настроен в основном коде
-  // Но на всякий случай добавляем явно
   bot.command('start', handleStart);
-  
-  // Обработчик команды /buy - показывает список доступных продуктов
+
+  // /buy — список продуктов
   bot.command('buy', async (ctx) => {
     try {
-      // Получаем имя пользователя
       const userName = getUserName(ctx.from);
-      
+
       await ctx.reply(
-        `📚 Выберите продукт, ${userName}:`,
+        `📚 Выберите формат занятий, ${userName}:`,
         {
           reply_markup: {
             inline_keyboard: [
-              [{ text: '🔰 Стартовый комплект - 990 ₽', callback_data: 'buy_starter' }],
-              [{ text: '👤 Разовая консультация - 5 000 ₽', callback_data: 'buy_individual' }],
-              [{ text: '🎯 Пакет 5 занятий - 22 000 ₽', callback_data: 'buy_package' }],
+              [{ text: '🟢 Пробное занятие — 1 500 ₽', callback_data: 'buy_trial' }],
+              [{ text: '🟡 Недельный интенсив — 14 000 ₽', callback_data: 'buy_intensive' }],
+              [{ text: '🔵 Курс 5 занятий — 25 000 ₽', callback_data: 'buy_course' }],
               [{ text: '◀️ Назад', callback_data: 'back_to_menu' }]
             ]
           }
         }
       );
-      
+
       logWithTime(`Пользователь ${ctx.from.id} открыл меню выбора продукта через команду /buy`);
     } catch (error) {
       console.error(`Ошибка в обработчике команды /buy: ${error.message}`);
@@ -73,22 +69,18 @@ function setupCommandHandlers(bot, handleStart) {
     }
   });
 
-  // Обработчик команды /info - показывает информацию о курсах
+  // /info — информация о методе
   bot.command('info', async (ctx) => {
     try {
-      // Получаем имя пользователя
       const userName = getUserName(ctx.from);
-      
-      // Сначала отправляем логотип с подписью
+
       await ctx.replyWithPhoto(
         { source: 'files/logo.jpg' },
-        { caption: '🌬️ Метод Бутейко - научно обоснованная дыхательная гимнастика' }
+        { caption: '🌬️ Метод Бутейко — научно обоснованная дыхательная гимнастика' }
       );
-      
-      // Небольшая задержка для лучшего UX
+
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Отправляем основной текст с научной информацией
+
       await ctx.reply(
         `Привет, ${userName}!\n\n` +
         `🧬 МЕТОД БУТЕЙКО\n\n` +
@@ -109,9 +101,13 @@ function setupCommandHandlers(bot, handleStart) {
         `• Безопасен при правильном освоении\n` +
         `• Навык остаётся с вами на всю жизнь\n` +
         `• Можно практиковать в любом месте\n\n` +
-        `Выберите /buy в меню, чтобы ознакомиться с доступными программами.\n\n` +
+        `📋 Форматы занятий:\n` +
+        `• 🟢 Пробное занятие — 1 500 ₽ (60 мин, 1:1)\n` +
+        `• 🟡 Недельный интенсив — 14 000 ₽ (7 дней × 30 мин)\n` +
+        `• 🔵 Курс 5 занятий — 25 000 ₽ (5 × 60 мин, 1:1)\n\n` +
+        `Выберите /buy в меню, чтобы записаться.\n\n` +
         `📞 Связаться с преподавателем: [Александр Попов](https://t.me/AS_Popov87)`,
-        { 
+        {
           parse_mode: 'Markdown',
           reply_markup: {
             ...mainKeyboard().reply_markup,
@@ -119,7 +115,7 @@ function setupCommandHandlers(bot, handleStart) {
           }
         }
       );
-      
+
       logWithTime(`Пользователь ${ctx.from.id} запросил информацию через команду /info`);
     } catch (error) {
       console.error(`Ошибка при обработке команды /info: ${error.message}`);
@@ -127,13 +123,12 @@ function setupCommandHandlers(bot, handleStart) {
     }
   });
 
-  // Обработчик команды /purchases - показывает покупки пользователя
+  // /purchases — покупки пользователя
   bot.command('purchases', async (ctx) => {
     try {
       const userId = ctx.from.id;
       const { completedOrders } = global.botData;
-      
-      // Проверяем, есть ли у пользователя завершенные заказы
+
       if (!completedOrders[userId] || completedOrders[userId].length === 0) {
         await ctx.reply(
           messageTemplates.noPurchases,
@@ -141,38 +136,37 @@ function setupCommandHandlers(bot, handleStart) {
         );
         return;
       }
-      
-      // Если есть заказы, показываем их
+
       const orders = completedOrders[userId];
       let message = '*Ваши покупки:*\n\n';
-      
+
       orders.forEach((order, index) => {
         const product = products[order.productId];
         const orderDate = new Date(order.completedAt).toLocaleDateString();
         const orderNumber = order.orderId || `#${Date.now().toString().slice(-6)}`;
-        
-        message += `*${index + 1}. ${product.name}*\n`;
+
+        message += `*${index + 1}. ${product ? product.name : order.productId}*\n`;
         message += `🆔 Заказ: ${orderNumber}\n`;
         message += `📅 Дата: ${orderDate}\n`;
-        message += `💳 Цена: ${product.price}\n`;
-        
+        message += `💳 Цена: ${product ? product.price : '—'}\n`;
+
         if (order.recordingSent) {
-          message += `🎬 Запись консультации: ✅\n`;
+          message += `🎬 Запись занятия: ✅\n`;
         }
-        
+
         message += '\n';
       });
-      
-      message += '\nДля повторного доступа к материалам напишите [Александру](https://t.me/AS_Popov87)';
-      
+
+      message += '\nДля вопросов по занятиям напишите [Александру](https://t.me/AS_Popov87)';
+
       await ctx.reply(
-        message, 
-        { 
+        message,
+        {
           parse_mode: 'Markdown',
-          reply_markup: mainKeyboard().reply_markup 
+          reply_markup: mainKeyboard().reply_markup
         }
       );
-      
+
       logWithTime(`Пользователь ${userId} просмотрел свои покупки через команду /purchases`);
     } catch (error) {
       console.error(`Ошибка при обработке команды /purchases: ${error.message}`);
@@ -180,89 +174,86 @@ function setupCommandHandlers(bot, handleStart) {
     }
   });
 
-  // Обработчик команды /consultations - показывает консультации пользователя
+  // /consultations — занятия пользователя
   bot.command('consultations', async (ctx) => {
     try {
       const userId = ctx.from.id;
       const { completedOrders } = global.botData;
-      
-      // Проверяем, есть ли у пользователя консультации
+
       if (!completedOrders[userId] || completedOrders[userId].length === 0) {
         await ctx.reply(
-          'У вас пока нет консультаций. Выберите /buy, чтобы приобрести индивидуальную консультацию.',
-          { 
+          'У вас пока нет занятий. Выберите /buy, чтобы записаться.',
+          {
             reply_markup: {
               ...mainKeyboard().reply_markup,
               remove_keyboard: true
-            } 
+            }
           }
         );
         return;
       }
-      
-      // Фильтруем только консультации
+
+      // Все продукты теперь — занятия (trial, intensive, course)
       const consultations = completedOrders[userId].filter(
-        order => order.productId === 'individual' || order.productId === 'package'
+        order => ['trial', 'intensive', 'course'].includes(order.productId)
       );
-      
+
       if (consultations.length === 0) {
         await ctx.reply(
-          'У вас пока нет индивидуальных консультаций. Выберите /buy, чтобы приобрести консультацию.',
-          { 
+          'У вас пока нет занятий. Выберите /buy, чтобы записаться.',
+          {
             reply_markup: {
               ...mainKeyboard().reply_markup,
               remove_keyboard: true
-            } 
+            }
           }
         );
         return;
       }
-      
-      // Если есть консультации, показываем их
-      let message = '*Ваши консультации:*\n\n';
-      
+
+      let message = '*Ваши занятия:*\n\n';
+
       consultations.forEach((consultation, index) => {
         const product = products[consultation.productId];
         const orderDate = new Date(consultation.completedAt).toLocaleDateString();
         const orderNumber = consultation.orderId || `#${Date.now().toString().slice(-6)}`;
-        
-        message += `*${index + 1}. ${product.name}*\n`;
+
+        message += `*${index + 1}. ${product ? product.name : consultation.productId}*\n`;
         message += `🆔 Заказ: ${orderNumber}\n`;
         message += `📅 Дата: ${orderDate}\n`;
-        
+
         if (consultation.recordingSent) {
           message += `🎬 Запись: ✅ [Доступна]\n`;
           message += `🔗 Ссылка: ${consultation.recordingLink || 'Свяжитесь с преподавателем'}\n`;
         } else {
           message += `🎬 Запись: ⏳ [Ожидает отправки]\n`;
         }
-        
+
         message += '\n';
       });
-      
-      message += 'Для получения записи консультации или дополнительной информации свяжитесь с [Александром](https://t.me/AS_Popov87)';
-      
+
+      message += 'Для вопросов по занятиям свяжитесь с [Александром](https://t.me/AS_Popov87)';
+
       await ctx.reply(
-        message, 
-        { 
+        message,
+        {
           parse_mode: 'Markdown',
           reply_markup: consultationsKeyboard().reply_markup
         }
       );
-      
-      logWithTime(`Пользователь ${userId} просмотрел свои консультации через команду /consultations`);
+
+      logWithTime(`Пользователь ${userId} просмотрел свои занятия через команду /consultations`);
     } catch (error) {
       console.error(`Ошибка при обработке команды /consultations: ${error.message}`);
       await ctx.reply('Произошла ошибка. Пожалуйста, попробуйте позже или нажмите /start для перезапуска бота.');
     }
   });
 
-  // Обработчик команды /contact - отправляет контакт преподавателя
+  // /contact — контакт преподавателя
   bot.command('contact', async (ctx) => {
     try {
-      // Получаем имя пользователя
       const userName = getUserName(ctx.from);
-      
+
       await ctx.reply(
         `📱 *Связаться с преподавателем*\n\nПривет, ${userName}!\n\nВы можете написать Александру напрямую по любым вопросам:`,
         {
@@ -274,7 +265,7 @@ function setupCommandHandlers(bot, handleStart) {
           }
         }
       );
-      
+
       logWithTime(`Пользователь ${ctx.from.id} запросил контакт преподавателя через команду /contact`);
     } catch (error) {
       console.error(`Ошибка при обработке команды /contact: ${error.message}`);
@@ -282,23 +273,26 @@ function setupCommandHandlers(bot, handleStart) {
     }
   });
 
-  // Обработчик команды /help - показывает справку
+  // /help — справка
   bot.command('help', async (ctx) => {
     try {
-      // Получаем имя пользователя
       const userName = getUserName(ctx.from);
-      
+
       await ctx.reply(
         `🌬️ *Дыхательная гимнастика по методу Бутейко с Александром Поповым*\n\nПривет, ${userName}!\n\nДоступные команды:\n\n` +
-        '• /start - Начать работу с ботом\n' +
-        '• /buy - Купить курс или консультацию\n' +
-        '• /info - Информация о курсах\n' +
-        '• /purchases - Мои покупки\n' +
-        '• /consultations - Мои консультации\n' +
-        '• /contact - Связаться с преподавателем\n' +
-        '• /help - Получить эту справку\n\n' +
+        '• /start — Начать работу с ботом\n' +
+        '• /buy — Записаться на занятие\n' +
+        '• /info — Информация о методе и форматах занятий\n' +
+        '• /purchases — Мои покупки\n' +
+        '• /consultations — Мои занятия\n' +
+        '• /contact — Связаться с преподавателем\n' +
+        '• /help — Получить эту справку\n\n' +
+        '📋 Форматы занятий:\n' +
+        '• 🟢 Пробное занятие — 1 500 ₽\n' +
+        '• 🟡 Недельный интенсив — 14 000 ₽\n' +
+        '• 🔵 Курс 5 занятий — 25 000 ₽\n\n' +
         'Если у вас возникли вопросы, вы всегда можете связаться с [Александром](https://t.me/AS_Popov87)',
-        { 
+        {
           parse_mode: 'Markdown',
           reply_markup: {
             ...mainKeyboard().reply_markup,
@@ -306,14 +300,14 @@ function setupCommandHandlers(bot, handleStart) {
           }
         }
       );
-      
+
       logWithTime(`Пользователь ${ctx.from.id} запросил справку через команду /help`);
     } catch (error) {
       console.error(`Ошибка при обработке команды /help: ${error.message}`);
       await ctx.reply('Произошла ошибка. Пожалуйста, попробуйте позже.');
     }
   });
-  
+
   logWithTime('📋 Обработчики команд меню успешно настроены');
 }
 
