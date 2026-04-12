@@ -69,12 +69,12 @@ bot.command('stats', async (ctx) => {
     function formatSource(source) {
       if (source.startsWith('websiteCta')) {
         const productPartRaw = source.replace('websiteCta', '');
-        const productKey = productPartRaw.toLowerCase();
+        const productKey = productPartRaw.charAt(0).toLowerCase() + productPartRaw.slice(1);
         
         const productNames = {
           trial: 'Пробное занятие',
           intensive: 'Недельный интенсив',
-          package5: 'Пакет 5'
+          course: 'Курс 5 занятий'
         };
         
         const productName = productNames[productKey] || productPartRaw || 'неизвестный продукт';
@@ -139,7 +139,7 @@ bot.action('show_info', async (ctx) => {
       `• Улучшается кислородное питание тканей\n` +
       `• Снижается спазм гладкой мускулатуры\n\n` +
       `📊 Доказанная эффективность:\n` +
-      `Метод признан Минздравом РФ и применяется в клинической практике с 1985 года.\n\n` +
+      `Метод признан Минздрава РФ и применяется в клинической практике с 1985 года.\n\n` +
       `🌟 Результаты зависят от вашей цели:\n` +
       `• Снять стресс и напряжение — несколько минут практики\n` +
       `• Улучшить сон и самочувствие — регулярная практика\n` +
@@ -149,7 +149,7 @@ bot.action('show_info', async (ctx) => {
       `• Безопасен при правильном освоении\n` +
       `• Навык остаётся с вами на всю жизнь\n` +
       `• Можно практиковать в любом месте\n\n` +
-      `Выберите 🛒️ Купить курс в меню, чтобы ознакомиться с доступными программами.\n\n` +
+      `Выберите 🛍️ Купить курс в меню, чтобы ознакомиться с доступными программами.\n\n` +
       `📞 Связаться с преподавателем: [Александр Попов](https://t.me/AS_Popov87)`,
       { 
         parse_mode: 'Markdown',
@@ -197,7 +197,7 @@ bot.action('show_purchases', async (ctx) => {
       message += `💳 Цена: ${product.price}\n`;
 
       if (order.recordingSent) {
-        message += `🎬 Запись консультации: ✅\n`;
+        message += `🎥 Запись консультации: ✅\n`;
       }
 
       message += '\n';
@@ -229,7 +229,7 @@ bot.action('show_consultations', async (ctx) => {
 
     if (!completedOrders[userId] || completedOrders[userId].length === 0) {
       await ctx.reply(
-        'У вас пока нет консультаций. Выберите 🛒️ Купить курс, чтобы приобрести индивидуальную консультацию.',
+        'У вас пока нет консультаций. Выберите 🛍️ Купить курс, чтобы приобрести индивидуальную консультацию.',
         { 
           reply_markup: {
             ...mainKeyboard().reply_markup,
@@ -247,7 +247,7 @@ bot.action('show_consultations', async (ctx) => {
 
     if (consultations.length === 0) {
       await ctx.reply(
-        'У вас пока нет индивидуальных консультаций. Выберите 🛒️ Купить курс, чтобы приобрести консультацию.',
+        'У вас пока нет индивидуальных консультаций. Выберите 🛍️ Купить курс, чтобы приобрести консультацию.',
         { 
           reply_markup: {
             ...mainKeyboard().reply_markup,
@@ -271,10 +271,10 @@ bot.action('show_consultations', async (ctx) => {
       message += `📅 Дата: ${orderDate}\n`;
 
       if (consultation.recordingSent) {
-        message += `🎬 Запись: ✅ [Доступна]\n`;
+        message += `🎥 Запись: ✅ [Доступна]\n`;
         message += `🔗 Ссылка: ${consultation.recordingLink || 'Свяжитесь с преподавателем'}\n`;
       } else {
-        message += `🎬 Запись: ⏳ [Ожидает отправки]\n`;
+        message += `🎥 Запись: ⏳ [Ожидает отправки]\n`;
       }
 
       message += '\n';
@@ -397,7 +397,7 @@ async function startBot() {
     setupScheduler(bot);
     
     // Запускаем ping для поддержания активности
-    setupPing(app, bot);
+    setupPing(APP_URL);
     
     // Запускаем webhook или polling в зависимости от окружения
     if (APP_URL) {
