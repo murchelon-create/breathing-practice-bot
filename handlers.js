@@ -154,9 +154,13 @@ async function handleTextInput(ctx) {
       }
     }
 
-    // Неизвестное сообщение
+    // Неизвестное сообщение — бот мог перезапуститься, предлагаем начать заново
     const { mainKeyboard } = require('./utils');
-    await ctx.reply('Не понял вас. Воспользуйтесь кнопками меню:', mainKeyboard());
+    const firstName = ctx.from.first_name || 'друг';
+    await ctx.reply(
+      `${firstName}, бот был перезапущен и потерял контекст вашего диалога 🔄\n\nПожалуйста, воспользуйтесь кнопками меню, чтобы начать заново:`,
+      mainKeyboard()
+    );
   } catch (error) {
     console.error(`[TEXT] Ошибка: ${error.message}`);
     throw error;
