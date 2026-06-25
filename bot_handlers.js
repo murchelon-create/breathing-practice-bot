@@ -6,7 +6,7 @@ const {
 
 const { products, messageTemplates } = require('./data');
 const { mainKeyboard, consultationsKeyboard, getUserName } = require('./utils');
-const { handleTextInput } = require('./handlers');
+const { handleTextInput, showProductInfo } = require('./handlers');
 const { confirmPayment } = require('./admin');
 const { setupScheduler } = require('./scheduler');
 const { setupBotCommands, setupCommandHandlers } = require('./menu_commands');
@@ -26,7 +26,7 @@ bot.command('stats', async (ctx) => {
     Object.values(userSources).forEach(s => { stats[s] = (stats[s] || 0) + 1; });
     const sortedStats = Object.entries(stats).sort((a, b) => b[1] - a[1]);
 
-    const productNames = { trial: 'Пробное занятие', intensive: 'Недельный интенсив', course: 'Курс 5 занятий' };
+    const productNames = { trial: 'Видеоурок', intensive: 'Недельный интенсив', course: 'Курс 5 занятий' };
     const sourceNames = {
       website: 'Сайт', website_hero: 'Сайт (главный экран)', website_footer: 'Сайт (подвал)',
       telegram_channel: 'Telegram канал', telegram_group: 'Telegram группа',
@@ -56,19 +56,20 @@ bot.command('stats', async (ctx) => {
   }
 });
 
+// Список продуктов для кнопок
+const productButtons = [
+  [{ text: '🟢 Видеоурок — 1 500 ₽', callback_data: 'buy_trial' }],
+  [{ text: '🟡 Недельный интенсив — 14 000 ₽', callback_data: 'buy_intensive' }],
+  [{ text: '🔵 Курс 5 занятий — 25 000 ₽', callback_data: 'buy_course' }],
+  [{ text: '◀️ Назад', callback_data: 'back_to_menu' }]
+];
+
 // buy_course_menu — inline-кнопка из главного меню
 bot.action('buy_course_menu', async (ctx) => {
   try {
     const userName = getUserName(ctx.from);
     await ctx.reply(`📚 Выберите формат занятия, ${userName}:`, {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '🟢 Пробное занятие — 1 500 ₽', callback_data: 'buy_trial' }],
-          [{ text: '🟡 Недельный интенсив — 14 000 ₽', callback_data: 'buy_intensive' }],
-          [{ text: '🔵 Курс 5 занятий — 25 000 ₽', callback_data: 'buy_course' }],
-          [{ text: '◀️ Назад', callback_data: 'back_to_menu' }]
-        ]
-      }
+      reply_markup: { inline_keyboard: productButtons }
     });
     await ctx.answerCbQuery();
   } catch (error) {
@@ -82,14 +83,7 @@ bot.hears('🛍️ Купить курс', async (ctx) => {
   try {
     const userName = getUserName(ctx.from);
     await ctx.reply(`📚 Выберите формат занятия, ${userName}:`, {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '🟢 Пробное занятие — 1 500 ₽', callback_data: 'buy_trial' }],
-          [{ text: '🟡 Недельный интенсив — 14 000 ₽', callback_data: 'buy_intensive' }],
-          [{ text: '🔵 Курс 5 занятий — 25 000 ₽', callback_data: 'buy_course' }],
-          [{ text: '◀️ Назад', callback_data: 'back_to_menu' }]
-        ]
-      }
+      reply_markup: { inline_keyboard: productButtons }
     });
   } catch (error) {
     console.error(`hears Купить курс: ${error.message}`);
@@ -265,22 +259,32 @@ bot.action('payment_confirmed_done', async (ctx) => {
   try { await ctx.answerCbQuery('Уже отмечено'); } catch (e) {}
 });
 
-// buy_
+// buy_ — показываем fullDescription, затем запрашиваем email
 bot.action(/^buy_(.+)$/, async (ctx) => {
   try {
     const productId = ctx.match[1];
     const product = products[productId];
     if (!product) { await ctx.answerCbQuery('Продукт не найден'); return; }
+
+    await ctx.answerCbQuery();
+
+    // Показываем описание продукта из data.js
+    await showProductInfo(ctx, productId);
+
+    // Небольшая пауза, чтобы пользователь успел прочитать
+    await new Promise(r => setTimeout(r, 800));
+
+    // Сохраняем заказ и запрашиваем email
     if (!global.botData.pendingOrders) global.botData.pendingOrders = {};
     global.botData.pendingOrders[ctx.from.id] = {
       productId, step: 'email', startedAt: new Date().toISOString()
     };
     await ctx.reply(messageTemplates.emailRequest(product.name), { reply_markup: { force_reply: true } });
-    await ctx.answerCbQuery();
+
     logWithTime(`Пользователь ${ctx.from.id} начал заказ: ${productId}`);
   } catch (error) {
     console.error(`buy_: ${error.message}`);
-    await ctx.answerCbQuery('Произошла ошибка');
+    try { await ctx.answerCbQuery('Произошла ошибка'); } catch (e) {}
   }
 });
 
@@ -306,7 +310,6 @@ async function startBot() {
     setupCommandHandlers(bot, handleStart);
     setupScheduler(bot);
 
-    // Всегда polling — без webhook
     await bot.telegram.deleteWebhook();
     bot.launch();
     logWithTime('✅ Бот запущен в режиме polling');
