@@ -13,7 +13,7 @@ function getSourceEmoji(source) {
 function formatSource(source) {
   if (source && source.startsWith('websiteCta')) {
     const key = source.replace('websiteCta', '').toLowerCase();
-    const names = { trial: 'Пробное занятие', intensive: 'Недельный интенсив', course: 'Курс 5 занятий' };
+    const names = { trial: 'Видеоурок', intensive: 'Недельный интенсив', course: 'Курс 5 занятий' };
     return `Сайт (CTA) → ${names[key] || key}`;
   }
   const map = { website: 'Сайт', website_hero: 'Сайт (главный экран)', website_footer: 'Сайт (подвал)', telegram_channel: 'Telegram канал', telegram_group: 'Telegram группа', instagram: 'Instagram', vk: 'ВКонтакте', youtube: 'YouTube', direct: 'Прямая ссылка', unknown: 'Неизвестно' };
@@ -32,6 +32,7 @@ async function confirmPayment(clientId) {
 
     const product = products[order.productId];
     const orderId = Date.now().toString().slice(-6);
+    const isVideoLesson = order.productId === 'trial';
 
     // Фото с поздравлением
     try {
@@ -39,22 +40,86 @@ async function confirmPayment(clientId) {
       await new Promise(r => setTimeout(r, 800));
     } catch (e) { /* фото может отсутствовать */ }
 
-    // Сообщение пользователю
-    await bot.telegram.sendMessage(
-      clientId,
-      `🎉 *Оплата подтверждена!*\n\n` +
-      `Спасибо за покупку: *${product.name}*\n\n` +
-      `Александр свяжется с вами в ближайшее время для согласования времени занятий.\n\n` +
-      `✅ ID заказа: #${orderId}`,
-      {
-        parse_mode: 'Markdown',
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: '✉️ Написать Александру', url: 'https://t.me/AS_Popov87' }]
-          ]
-        }
+    if (isVideoLesson) {
+      // ============================================================
+      // ВИДЕОУРОК: автоматическая отправка доступа
+      // ============================================================
+      const videoLink = product.videoLink; // Ссылка хранится в data.js → products.trial.videoLink
+
+      if (videoLink) {
+        // Ссылка уже задана — отправляем сразу
+        await bot.telegram.sendMessage(
+          clientId,
+          `🎉 *Оплата подтверждена!*\n\n` +
+          `Спасибо за покупку: *${product.name}*\n\n` +
+          `🎥 Ваш видеоурок готов!\n` +
+          `Продолжительность: 40 минут — смотрите в удобное время:\n\n` +
+          `🔗 ${videoLink}\n\n` +
+          `✅ ID заказа: #${orderId}\n\n` +
+          `Если есть вопросы — пишите [Александру](https://t.me/AS_Popov87)`,
+          {
+            parse_mode: 'Markdown',
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '🎥 Смотреть видеоурок', url: videoLink }],
+                [{ text: '✉️ Написать Александру', url: 'https://t.me/AS_Popov87' }]
+              ]
+            }
+          }
+        );
+        logWithTime(`[VIDEO] Ссылка на видеоурок отправлена пользователю ${clientId}`);
+      } else {
+        // Ссылка ещё не задана — админ отправит вручную
+        await bot.telegram.sendMessage(
+          clientId,
+          `🎉 *Оплата подтверждена!*\n\n` +
+          `Спасибо за покупку: *${product.name}*\n\n` +
+          `🎥 Ссылка на видеоурок будет отправлена вам в течение 24 часов.\n\n` +
+          `✅ ID заказа: #${orderId}\n\n` +
+          `Если есть вопросы — пишите [Александру](https://t.me/AS_Popov87)`,
+          {
+            parse_mode: 'Markdown',
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '✉️ Написать Александру', url: 'https://t.me/AS_Popov87' }]
+              ]
+            }
+          }
+        );
+        // Предупреждаем админа, чтобы отправил ссылку вручную
+        await bot.telegram.sendMessage(
+          ADMIN_ID,
+          `⚠️ Ссылка на видеоурок не задана!\n\n` +
+          `Пользователь ${clientId} купил Видеоурок — отправьте ссылку вручную.\n\n` +
+          `Чтобы автоматизировать: заполните поле videoLink в data.js`,
+          {
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '🎥 Отправить ссылку клиенту', callback_data: `send_recording_${clientId}` }]
+              ]
+            }
+          }
+        );
+        logWithTime(`[VIDEO] videoLink = null, админ предупреждён для ${clientId}`);
       }
-    );
+    } else {
+      // Остальные продукты — прежняя логика
+      await bot.telegram.sendMessage(
+        clientId,
+        `🎉 *Оплата подтверждена!*\n\n` +
+        `Спасибо за покупку: *${product.name}*\n\n` +
+        `Александр свяжется с вами в ближайшее время для согласования времени занятий.\n\n` +
+        `✅ ID заказа: #${orderId}`,
+        {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '✉️ Написать Александру', url: 'https://t.me/AS_Popov87' }]
+            ]
+          }
+        }
+      );
+    }
 
     // Сохраняем в завершённые
     if (!completedOrders[clientId]) completedOrders[clientId] = [];
@@ -62,7 +127,8 @@ async function confirmPayment(clientId) {
       ...order,
       completedAt: new Date().toISOString(),
       status: 'completed',
-      orderId
+      orderId,
+      videoLinkSent: isVideoLesson && !!product.videoLink
     });
     delete pendingOrders[clientId];
 
